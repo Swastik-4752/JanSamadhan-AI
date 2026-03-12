@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // COMPLAINTS COLLECTION
+    // - Anyone can read (for tracking by citizens)
+    // - Anyone can create (for filing complaints)
+    // - Only authenticated users can update (for admin status changes)
+    // - No one can delete
+    match /complaints/{complaintId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if request.auth != null;
+      allow delete: if false;
+    }
+
+    // WARDS COLLECTION
+    // - Only authenticated users can read and write
+    match /wards/{wardId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // DENY ALL OTHER ACCESS
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
