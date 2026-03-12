@@ -28,6 +28,7 @@ import {
     ClipboardList,
     Construction,
     ArrowUpCircle,
+    Phone,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -64,6 +65,11 @@ function TrackComplaint() {
     const [loading, setLoading] = useState(false);
     const [complaint, setComplaint] = useState(null); // null | object | "not_found"
     const [rating, setRating] = useState(0);
+
+    /* Phone lookup state */
+    const [phoneInput, setPhoneInput] = useState("");
+    const [phoneLoading, setPhoneLoading] = useState(false);
+    const [phoneResults, setPhoneResults] = useState(null); // null | [] | "not_found"
 
     /* Auto-search from URL params */
     useEffect(() => {
@@ -106,6 +112,61 @@ function TrackComplaint() {
     const handleSubmit = (e) => {
         e.preventDefault();
         doSearch();
+    };
+
+    /* ── Phone lookup query ── */
+    const doPhoneSearch = async () => {
+        const phone = phoneInput.trim();
+        if (!phone) return;
+        setPhoneLoading(true);
+        setPhoneResults(null);
+        // Clear single-complaint view
+        setComplaint(null);
+        setRating(0);
+
+        try {
+            const q = query(
+                collection(db, "complaints"),
+                where("phone", "==", phone)
+            );
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                setPhoneResults("not_found");
+            } else {
+                const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                // Sort newest first
+                list.sort((a, b) => {
+                    const aT = a.createdAt?.toDate?.() || new Date(0);
+                    const bT = b.createdAt?.toDate?.() || new Date(0);
+                    return bT - aT;
+                });
+                setPhoneResults(list);
+            }
+        } catch (err) {
+            console.error("Phone search error:", err);
+            setPhoneResults("not_found");
+        } finally {
+            setPhoneLoading(false);
+        }
+    };
+
+    const handlePhoneSubmit = (e) => {
+        e.preventDefault();
+        doPhoneSearch();
+    };
+
+    /** When user clicks a card from phone results, switch to tracking ID view */
+    const selectFromPhoneResults = (trackingId) => {
+        setPhoneResults(null);
+        setPhoneInput("");
+        setInput(trackingId);
+        doSearch(trackingId);
+    };
+
+    /** Mask phone: "9876543210" → "XXXXXX3210" */
+    const maskPhone = (phone) => {
+        if (!phone || phone.length < 4) return "XXXX";
+        return "X".repeat(phone.length - 4) + phone.slice(-4);
     };
 
     /* ── Formatters / helpers ── */
@@ -227,6 +288,137 @@ function TrackComplaint() {
                         Search
                     </button>
                 </form>
+
+                {/* ── OR divider ── */}
+                {!complaint && !loading && (
+                    <div className="flex items-center gap-4 max-w-xl mx-auto mb-8">
+                        <div className="flex-1 h-px bg-dark-300" />
+                        <span className="text-gray-500 text-sm font-medium">— OR —</span>
+                        <div className="flex-1 h-px bg-dark-300" />
+                    </div>
+                )}
+
+                {/* ── Phone Lookup ── */}
+                {!complaint && !loading && (
+                    <form
+                        onSubmit={handlePhoneSubmit}
+                        className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mb-12"
+                    >
+                        <div className="relative flex-1">
+                            <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                type="tel"
+                                value={phoneInput}
+                                onChange={(e) => setPhoneInput(e.target.value)}
+                                placeholder="Enter your registered mobile number"
+                                className="w-full bg-dark-100 border border-dark-300 rounded-xl pl-10 pr-5 py-3.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8]/50 focus:border-[#1A73E8] transition-all"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={phoneLoading || !phoneInput.trim()}
+                            className="inline-flex items-center justify-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20"
+                        >
+                            <Search size={18} />
+                            Find My Complaints
+                        </button>
+                    </form>
+                )}
+
+                {/* ── Phone Loading ── */}
+                {phoneLoading && (
+                    <div className="text-center py-16">
+                        <Loader2
+                            size={40}
+                            className="animate-spin text-[#1A73E8] mx-auto mb-4"
+                        />
+                        <p className="text-gray-400">
+                            Looking up complaints...
+                        </p>
+                    </div>
+                )}
+
+                {/* ── Phone Not Found ── */}
+                {phoneResults === "not_found" && (
+                    <div className="text-center py-16 bg-dark-100 border border-dark-300 rounded-2xl">
+                        <XCircle
+                            size={48}
+                            className="text-red-400 mx-auto mb-4"
+                        />
+                        <h2 className="text-xl font-bold mb-2">
+                            No complaints found with this number
+                        </h2>
+                        <p className="text-gray-400 mb-6">
+                            Please check your phone number and try again
+                        </p>
+                        <Link
+                            to="/file-complaint"
+                            className="inline-flex items-center gap-2 text-[#1A73E8] hover:underline font-medium"
+                        >
+                            File a new complaint
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                )}
+
+                {/* ── Phone Results List ── */}
+                {Array.isArray(phoneResults) && phoneResults.length > 0 && (
+                    <div className="space-y-4 mb-8">
+                        <p className="text-gray-400 text-sm">
+                            Found <span className="text-white font-semibold">{phoneResults.length}</span> complaint{phoneResults.length > 1 ? "s" : ""} for <span className="font-mono text-white">{maskPhone(phoneInput || phoneResults[0]?.phone)}</span>
+                        </p>
+
+                        {phoneResults.map((item) => {
+                            const filed = item.createdAt?.toDate
+                                ? item.createdAt.toDate().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                                : "—";
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => selectFromPhoneResults(item.trackingId)}
+                                    className="w-full text-left bg-dark-100 border border-dark-300 rounded-2xl p-5 hover:border-[#1A73E8]/50 hover:shadow-[0_0_12px_1px_rgba(26,115,232,0.2)] transition-all duration-200 group"
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div>
+                                            <p className="font-mono text-[#1A73E8] font-bold text-sm group-hover:underline">
+                                                {item.trackingId}
+                                            </p>
+                                            <p className="text-gray-400 text-xs mt-1">
+                                                {safeName(item.name)} · {maskPhone(item.phone)}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusColor[item.status] || statusColor.Pending}`}>
+                                                {item.status}
+                                            </span>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${priorityColor[item.priority] || priorityColor.Standard}`}>
+                                                {item.priority}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                                        <span className="flex items-center gap-1">
+                                            {catIcons[item.category] || <ClipboardList size={12} />}
+                                            {item.category}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <MapPin size={12} />
+                                            {item.ward}
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <Clock size={12} />
+                                            {filed}
+                                        </span>
+                                    </div>
+                                </button>
+                            );
+                        })}
+
+                        <p className="text-gray-600 text-xs text-center mt-4">
+                            Complaint details are public record as per RTI guidelines.
+                        </p>
+                    </div>
+                )}
 
                 {/* ── Loading ── */}
                 {loading && (
