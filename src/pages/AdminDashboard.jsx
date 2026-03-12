@@ -34,6 +34,9 @@ import {
     X,
     Database,
     BarChart2,
+    ImagePlus,
+    Upload,
+    ArrowUpCircle,
 } from "lucide-react";
 import { CATEGORIES, STATUSES, WARDS } from "../utils/constants";
 import toast from "react-hot-toast";
@@ -45,17 +48,17 @@ const sampleComplaints = [
     { name: "Rahul Sharma", phone: "9876543210", ward: "Connaught Place", category: "Road & Potholes", priority: "Urgent", description: "Badi pothole hai Rohini sector 5 mein, 2 hafte se fix nahi hua", status: "Pending", daysAgo: 5 },
     { name: "Priya Verma", phone: "9123456789", ward: "Karol Bagh", category: "Garbage & Sanitation", priority: "Standard", description: "Kachra collection 3 din se nahi hua. Pura mohalla smell maar raha hai.", status: "Assigned", daysAgo: 2 },
     { name: "Amit Singh", phone: "9988776655", ward: "Dwarka", category: "Water Leakage", priority: "Urgent", description: "Main pipe burst near Dwarka Mor metro station. Paani barbaad ho raha hai.", status: "In Progress", daysAgo: 1 },
-    { name: "Sunita Devi", phone: "9876501234", ward: "Rohini", category: "Streetlight", priority: "Standard", description: "Rohini Sector 22 mein street light nahi jal rahi. Raat ko andhera.", status: "Resolved", daysAgo: 3 },
-    { name: "Manoj Kumar", phone: "9654321098", ward: "Saket", category: "Drainage", priority: "Urgent", description: "Nala overflow ho raha hai Saket mein. Baarish mein flooding.", status: "Pending", daysAgo: 6 },
+    { name: "Sunita Devi", phone: "9876501234", ward: "Rohini", category: "Streetlight", priority: "Standard", description: "Rohini Sector 22 mein street light nahi jal rahi. Raat ko andhera.", status: "Resolved", daysAgo: 3, resolutionPhotoUrl: "https://res.cloudinary.com/djgxnupog/image/upload/v1710000000/sample_resolved.jpg" },
+    { name: "Manoj Kumar", phone: "9654321098", ward: "Saket", category: "Drainage", priority: "Urgent", description: "Nala overflow ho raha hai Saket mein. Baarish mein flooding. 10 din ho gaye koi nahi aaya.", status: "Pending", daysAgo: 10 },
     { name: "Rekha Yadav", phone: "9012345678", ward: "Lajpat Nagar", category: "Garbage & Sanitation", priority: "Standard", description: "Market area mein dustbin overflow. Tourists ko bhi dikkat.", status: "Assigned", daysAgo: 4 },
     { name: "Vikas Gupta", phone: "9876509876", ward: "Janakpuri", category: "Road & Potholes", priority: "Urgent", description: "C-block road completely broken. Accidents ho rahe hain daily.", status: "In Progress", daysAgo: 0 },
     { name: "Neha Agarwal", phone: "9988001122", ward: "Pitampura", category: "Water Leakage", priority: "Standard", description: "Underground pipe leak near park. Paani waste ho raha hai.", status: "Pending", daysAgo: 1 },
     { name: "Rajesh Mishra", phone: "9123401234", ward: "Mayur Vihar", category: "Streetlight", priority: "Urgent", description: "Phase 2 mein poori colony ki lights band hain. 1 week ho gaya.", status: "Pending", daysAgo: 7 },
     { name: "Kavita Sharma", phone: "9876543211", ward: "Vasant Kunj", category: "Drainage", priority: "Standard", description: "Drain block hai B-block mein. Machhar bahut aa rahe hain.", status: "Resolved", daysAgo: 2 },
-    { name: "Deepak Chauhan", phone: "9012300123", ward: "Connaught Place", category: "Other", priority: "Standard", description: "Footpath tiles broken near N-block. Senior citizens ko problem.", status: "Assigned", daysAgo: 3 },
-    { name: "Anita Rawat", phone: "9654300654", ward: "Dwarka", category: "Garbage & Sanitation", priority: "Urgent", description: "Hospital ke bahar kachra dheer laga hai. Health hazard.", status: "Pending", daysAgo: 5 },
-    { name: "Sanjay Tiwari", phone: "9988770011", ward: "Rohini", category: "Road & Potholes", priority: "Standard", description: "Sector 15 main road pe speed breaker tuta hua hai.", status: "In Progress", daysAgo: 1 },
-    { name: "Geeta Rani", phone: "9876123456", ward: "Karol Bagh", category: "Water Leakage", priority: "Urgent", description: "Borewell overflow ho raha hai. Gali mein paani bhar gaya.", status: "Assigned", daysAgo: 4 },
+    { name: "Deepak Chauhan", phone: "9012300123", ward: "Connaught Place", category: "Other", priority: "Standard", description: "Footpath tiles broken near N-block. Senior citizens ko problem. 6 din ho gaye.", status: "Assigned", daysAgo: 6 },
+    { name: "Anita Rawat", phone: "9654300654", ward: "Dwarka", category: "Garbage & Sanitation", priority: "Urgent", description: "Hospital ke bahar kachra dheer laga hai. Health hazard. Bahut din ho gaye.", status: "Pending", daysAgo: 8 },
+    { name: "Sanjay Tiwari", phone: "9988770011", ward: "Rohini", category: "Road & Potholes", priority: "Standard", description: "Sector 15 main road pe speed breaker tuta hua hai.", status: "In Progress", daysAgo: 5 },
+    { name: "Geeta Rani", phone: "9876123456", ward: "Karol Bagh", category: "Water Leakage", priority: "Urgent", description: "Borewell overflow ho raha hai. Gali mein paani bhar gaya. 4 din se koi nahi aaya.", status: "Assigned", daysAgo: 4 },
     { name: "Pankaj Verma", phone: "9123456700", ward: "Saket", category: "Streetlight", priority: "Standard", description: "Park ke andar sab lights band hain. Evening walk nahi ho paati.", status: "Resolved", daysAgo: 1 },
 ];
 
@@ -78,6 +81,7 @@ async function seedData() {
                 trackingId,
                 createdAt: Timestamp.fromDate(createdAt),
                 resolvedAt: item.status === "Resolved" ? Timestamp.fromDate(new Date()) : null,
+                resolutionPhotoUrl: item.resolutionPhotoUrl || null,
             });
         }
         toast.success("15 sample complaints loaded!");
@@ -103,7 +107,7 @@ function getSlaInfo(complaint) {
     }
 
     if (now > deadline) {
-        return { label: <><AlertTriangle size={14} className="inline mr-1 -mt-0.5" /> Breached</>, color: "text-red-400" };
+        return { label: <><AlertTriangle size={14} className="inline mr-1 -mt-0.5" /> Breached</>, color: "text-red-400", breached: true };
     }
 
     const hoursLeft = differenceInHours(deadline, now);
@@ -140,6 +144,12 @@ function AdminDashboard() {
     const [seeding, setSeeding] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const navigate = useNavigate();
+
+    // Resolve modal state
+    const [resolveModal, setResolveModal] = useState({ open: false, complaintId: null });
+    const [resolvePhoto, setResolvePhoto] = useState(null);
+    const [resolvePhotoPreview, setResolvePhotoPreview] = useState(null);
+    const [resolving, setResolving] = useState(false);
 
     // Filters
     const [filterStatus, setFilterStatus] = useState("");
@@ -183,12 +193,15 @@ function AdminDashboard() {
 
     // Update complaint status
     const handleStatusChange = async (id, newStatus) => {
+        // Intercept "Resolved" to open the modal
+        if (newStatus === "Resolved") {
+            setResolveModal({ open: true, complaintId: id });
+            return;
+        }
+
         setUpdatingId(id);
         try {
             const updateData = { status: newStatus };
-            if (newStatus === "Resolved") {
-                updateData.resolvedAt = serverTimestamp();
-            }
             await updateDoc(doc(db, "complaints", id), updateData);
             toast.success(`Status updated to ${newStatus}`);
         } catch (error) {
@@ -196,6 +209,62 @@ function AdminDashboard() {
             toast.error("Failed to update status.");
         }
         setUpdatingId(null);
+    };
+
+    // Resolve modal: file pick
+    const handleResolveFileChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setResolvePhoto(file);
+        setResolvePhotoPreview(URL.createObjectURL(file));
+    };
+
+    // Resolve modal: cancel
+    const cancelResolve = () => {
+        setResolveModal({ open: false, complaintId: null });
+        setResolvePhoto(null);
+        setResolvePhotoPreview(null);
+    };
+
+    // Resolve modal: confirm
+    const confirmResolve = async () => {
+        const { complaintId } = resolveModal;
+        if (!complaintId) return;
+
+        setResolving(true);
+        try {
+            let resolutionPhotoUrl = null;
+
+            // Upload to Cloudinary if photo selected
+            if (resolvePhoto) {
+                const formData = new FormData();
+                formData.append("file", resolvePhoto);
+                formData.append("upload_preset", "Jansamadhan");
+
+                const res = await fetch(
+                    "https://api.cloudinary.com/v1_1/djgxnupog/image/upload",
+                    { method: "POST", body: formData }
+                );
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error?.message || "Upload failed");
+                resolutionPhotoUrl = data.secure_url;
+            }
+
+            // Update Firestore
+            await updateDoc(doc(db, "complaints", complaintId), {
+                status: "Resolved",
+                resolvedAt: serverTimestamp(),
+                resolutionPhotoUrl,
+            });
+
+            toast.success("Complaint marked as Resolved!");
+            cancelResolve();
+        } catch (error) {
+            console.error("Resolve error:", error);
+            toast.error("Failed to resolve complaint.");
+        } finally {
+            setResolving(false);
+        }
     };
 
     // Seed handler
@@ -450,6 +519,11 @@ function AdminDashboard() {
                                                 </td>
                                                 <td className="px-6 py-3">
                                                     <StatusBadge status={c.status} />
+                                                    {sla.breached && (
+                                                        <span className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-red-400">
+                                                            <ArrowUpCircle size={10} /> Escalated
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="px-6 py-3 text-xs text-gray-500 whitespace-nowrap">
                                                     {filedDate}
@@ -543,6 +617,98 @@ function AdminDashboard() {
                     </div>
                 )}
             </main>
+
+            {/* ============ RESOLVE MODAL ============ */}
+            {resolveModal.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-dark-100 border border-dark-300 rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl animate-fade-in-up">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-1">
+                            <h2 className="flex items-center gap-2 text-xl font-bold text-white">
+                                <CheckCircle className="text-green-400" size={22} />
+                                Mark as Resolved
+                            </h2>
+                            <button
+                                onClick={cancelResolve}
+                                className="p-1.5 rounded-lg hover:bg-dark-200 text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="text-gray-400 text-sm mb-6">
+                            Optionally upload resolution proof photo
+                        </p>
+
+                        {/* Upload area */}
+                        {resolvePhotoPreview ? (
+                            <div className="relative mb-6">
+                                <img
+                                    src={resolvePhotoPreview}
+                                    alt="Resolution proof preview"
+                                    className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300"
+                                />
+                                <button
+                                    onClick={() => {
+                                        setResolvePhoto(null);
+                                        setResolvePhotoPreview(null);
+                                    }}
+                                    className="absolute top-2 right-2 p-1.5 rounded-full bg-dark/80 hover:bg-red-500/20 text-gray-300 hover:text-red-400 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <label className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-dark-300 hover:border-primary/50 rounded-xl p-8 mb-6 cursor-pointer transition-colors group">
+                                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                    <ImagePlus className="text-primary" size={28} />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-gray-300 text-sm font-medium">
+                                        Click to upload photo
+                                    </p>
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        JPG, PNG or WEBP · Max 10MB
+                                    </p>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleResolveFileChange}
+                                    className="hidden"
+                                />
+                            </label>
+                        )}
+
+                        {/* Buttons */}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={cancelResolve}
+                                disabled={resolving}
+                                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-300 border border-dark-300 hover:bg-dark-200 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmResolve}
+                                disabled={resolving}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1A73E8] hover:bg-[#1558b0] transition-all shadow-lg shadow-blue-500/20 disabled:opacity-60"
+                            >
+                                {resolving ? (
+                                    <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        {resolvePhoto ? "Uploading..." : "Resolving..."}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload size={16} />
+                                        Confirm Resolution
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

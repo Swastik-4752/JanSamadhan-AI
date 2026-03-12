@@ -27,6 +27,7 @@ import {
     Waves,
     ClipboardList,
     Construction,
+    ArrowUpCircle,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -153,12 +154,15 @@ function TrackComplaint() {
 
         const now = new Date();
         if (now > deadline) {
+            const overdueMs = now - deadline;
+            const overdueHrs = Math.floor(overdueMs / 3600000);
+            const overdueMins = Math.floor((overdueMs % 3600000) / 60000);
             return {
                 type: "breached",
                 icon: <AlertTriangle size={16} className="inline mr-1.5 align-text-bottom text-red-400" />,
-                text: "SLA Breached — This complaint is overdue",
-                subtext:
-                    "It has been escalated to senior officer.",
+                text: "SLA Breached — Escalated to Senior Officer",
+                subtext: "This complaint has been automatically escalated due to missed deadline",
+                overdueText: `Overdue by ${overdueHrs} hours ${overdueMins} minutes`,
             };
         }
 
@@ -414,24 +418,52 @@ function TrackComplaint() {
                                         );
                                     })}
                                 </div>
+
+                                {/* Escalated indicator below stepper */}
+                                {sla && sla.type === "breached" && (
+                                    <div className="flex items-center justify-center gap-2 mt-4 px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
+                                        <ArrowUpCircle size={16} className="text-red-400" />
+                                        <span className="text-red-400 text-xs font-semibold">Escalated</span>
+                                        <span className="text-red-400/70 text-xs">— Auto-escalated to Senior Ward Officer</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* ─── SLA Box ─── */}
-                            {sla && (
+                            {sla && sla.type === "breached" && (
+                                <div className="rounded-xl p-5 mb-8 border bg-red-500/10 border-red-500/30">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                                            <AlertTriangle size={22} className="text-red-400" />
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-red-400 text-sm">
+                                                {sla.text}
+                                            </p>
+                                            <p className="text-red-400/70 text-xs mt-1">
+                                                {sla.subtext}
+                                            </p>
+                                            <p className="text-red-300 text-xs font-semibold mt-2">
+                                                <Clock size={12} className="inline mr-1 -mt-0.5" />
+                                                {sla.overdueText}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {sla && sla.type !== "breached" && (
                                 <div
                                     className={`rounded-xl p-4 mb-8 border ${
-                                        sla.type === "breached"
-                                            ? "bg-red-500/10 border-red-500/30"
-                                            : sla.type === "resolved"
+                                        sla.type === "resolved"
                                             ? "bg-green-500/10 border-green-500/30"
-                                            : "bg-green-500/10 border-green-500/30"
+                                            : "bg-yellow-500/10 border-yellow-500/30"
                                     }`}
                                 >
                                     <p
                                         className={`font-semibold text-sm ${
-                                            sla.type === "breached"
-                                                ? "text-red-400"
-                                                : "text-green-400"
+                                            sla.type === "resolved"
+                                                ? "text-green-400"
+                                                : "text-yellow-400"
                                         }`}
                                     >
                                         {sla.icon}
@@ -440,9 +472,9 @@ function TrackComplaint() {
                                     {sla.subtext && (
                                         <p
                                             className={`text-xs mt-1 ${
-                                                sla.type === "breached"
-                                                    ? "text-red-400/70"
-                                                    : "text-green-400/70"
+                                                sla.type === "resolved"
+                                                    ? "text-green-400/70"
+                                                    : "text-yellow-400/70"
                                             }`}
                                         >
                                             {sla.subtext}
@@ -518,6 +550,24 @@ function TrackComplaint() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ─ Resolution Proof Photo ─ */}
+                        {c.status === "Resolved" && c.resolutionPhotoUrl && (
+                            <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6 sm:p-8">
+                                <h3 className="flex items-center gap-2 text-lg font-bold mb-4 text-green-400">
+                                    <CheckCircle size={20} />
+                                    Resolution Proof
+                                </h3>
+                                <img
+                                    src={c.resolutionPhotoUrl}
+                                    alt="Resolution proof"
+                                    className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300 mb-3"
+                                />
+                                <p className="text-gray-400 text-sm">
+                                    Verified and resolved by Ward Officer
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
