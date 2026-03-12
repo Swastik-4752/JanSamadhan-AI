@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, ShieldCheck, Building2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck, Building2, Info, Copy } from "lucide-react";
 
 function AdminLogin() {
     const [email, setEmail] = useState("");
@@ -165,6 +165,47 @@ function AdminLogin() {
                             </button>
                         </form>
                     </div>
+                </div>
+
+                {/* Demo Credentials */}
+                <div className="mt-4 bg-dark-100 border border-dark-300 rounded-xl p-5">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-gray-300 mb-3">
+                        <Info size={16} className="text-[#1A73E8]" />
+                        Demo Credentials
+                    </p>
+                    <div className="space-y-2.5">
+                        <div className="flex items-center justify-between bg-dark-200 rounded-lg px-3 py-2 border border-dark-300">
+                            <div>
+                                <p className="text-gray-500 text-[10px] uppercase tracking-wider">Email</p>
+                                <p className="text-gray-200 text-sm font-mono">admin@jansamadhan.com</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => { setEmail("admin@jansamadhan.com"); setPassword("Admin@1234"); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A73E8]/10 hover:bg-[#1A73E8]/20 text-[#1A73E8] text-xs font-medium transition-colors"
+                            >
+                                <Copy size={12} />
+                                Auto-fill
+                            </button>
+                        </div>
+                        <div className="flex items-center justify-between bg-dark-200 rounded-lg px-3 py-2 border border-dark-300">
+                            <div>
+                                <p className="text-gray-500 text-[10px] uppercase tracking-wider">Password</p>
+                                <p className="text-gray-200 text-sm font-mono">Admin@1234</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => { setEmail("admin@jansamadhan.com"); setPassword("Admin@1234"); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1A73E8]/10 hover:bg-[#1A73E8]/20 text-[#1A73E8] text-xs font-medium transition-colors"
+                            >
+                                <Copy size={12} />
+                                Auto-fill
+                            </button>
+                        </div>
+                    </div>
+                    <p className="text-gray-600 text-[11px] mt-3 text-center">
+                        Use these credentials to explore the admin dashboard
+                    </p>
                 </div>
 
                 {/* Hint */}
