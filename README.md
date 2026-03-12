@@ -6,6 +6,16 @@
 
 ---
 
+## 🔗 Live Demo
+
+**🌐 https://jansamadhan-ai.web.app**
+
+**Admin Demo Credentials:**
+- Email: `admin@jansamadhan.com`
+- Password: `Admin@1234`
+
+---
+
 ## 🔴 The Problem
 
 Delhi's 20 million citizens file lakhs of complaints daily — potholes, broken streetlights, garbage overflow, water leakage. MCD already has the MCD311 app, helpline 155305, and an online portal. Yet complaints die silently.
@@ -28,57 +38,42 @@ Delhi's 20 million citizens file lakhs of complaints daily — potholes, broken 
 
 **JanSamadhan AI** — India's first ward-level civic complaint intelligence system.
 
-A centralized AI-powered command center where:
-
-- 🗣️ Citizens file complaints via **WhatsApp, Web, or SMS** in Hindi or English
-- 🤖 **AI auto-classifies** complaint type (road, water, sanitation, electricity) and assigns it to the correct ward officer instantly
-- 🔖 Every complaint gets a **unique tracking ID** — citizen tracks status anytime
+- 🤖 **AI auto-classifies** complaint type and priority instantly using Groq LLM
+- 🔖 Every complaint gets a **unique tracking ID** — track status anytime
 - ⏱️ **SLA timer auto-starts** — 24hrs for urgent, 72hrs for standard
-- 🚨 Missed deadline → **auto-escalates** to senior officer
-- 📊 **Ward-level performance dashboard** for MCD leadership — see which zones are resolving fastest, which are failing
-- 📸 Resolution confirmed with **photo proof** sent to citizen via WhatsApp
+- 🚨 Missed deadline → **auto-escalates** to Senior Ward Officer
+- 📸 **Before & After photo proof** — citizen uploads issue photo, officer uploads resolution proof
+- 📱 **Phone number lookup** — lost your tracking ID? Find complaints by mobile number
+- 📊 **Real-time ward analytics dashboard** for MCD leadership
 
 ---
 
-## 🔁 System Architecture
+## ✅ Features Built
 
-```
-Citizen Input Layer
-[WhatsApp / Web Portal / Mobile App / SMS]
-          ↓
-AI Classification Engine
-[NLP → auto-tags complaint type, priority, ward]
-          ↓
-Task Assignment Module
-[Maps complaint → correct ward officer by location + category]
-          ↓
-SLA & Escalation Engine
-[Timer starts → missed deadline → auto-escalates up hierarchy]
-          ↓
-Field Worker App
-[Officer receives task, updates status, uploads photo proof]
-          ↓
-Central Dashboard (MCD Admin)
-[Real-time ward-wise complaint heatmap, resolution rates, officer performance]
-          ↓
-Citizen Notification
-[WhatsApp/SMS updates at every status change + final resolution proof]
-```
+| Feature | Status |
+|---------|--------|
+| AI complaint classification (Groq LLM) | ✅ Live |
+| Unique tracking ID generation | ✅ Live |
+| SLA enforcement — 24hr urgent / 72hr standard | ✅ Live |
+| Auto-escalation when SLA breached | ✅ Live |
+| Before/After photo proof (Cloudinary) | ✅ Live |
+| Phone number lookup for lost tracking ID | ✅ Live |
+| Real-time ward analytics dashboard | ✅ Live |
+| Admin login with demo credentials | ✅ Live |
 
 ---
 
-## 🛠️ Tech Stack
+## 🔮 Future Roadmap
 
-| Technology | Role |
-|------------|------|
-| React.js | Web portal + Admin dashboard frontend |
-| Node.js + Express | Backend API and workflow engine |
-| PostgreSQL | Complaint records, SLA tracking, officer assignments |
-| OpenAI / Gemini API | NLP complaint classification in Hindi + English |
-| Twilio WhatsApp API | Citizen complaint intake and status notifications |
-| Google Maps API | Ward-level geo-tagging and complaint heatmap |
-| Firebase | Real-time status sync to citizen-facing interfaces |
-| Clerk | Role-based auth for ward officers and admin hierarchy |
+| Feature | Description |
+|---------|-------------|
+| WhatsApp / SMS Intake | Citizens file complaints via WhatsApp or SMS using Twilio API |
+| Field Worker Mobile App | On-ground officers receive tasks, update status, upload proof from mobile |
+| Google Maps Ward Heatmap | Visual complaint density map across all 272 wards |
+| Full Hindi NLP | Dedicated Hindi language model for complaint classification |
+| Citizen WhatsApp Notifications | Auto-notify citizens at every status change via WhatsApp |
+| Multi-city Expansion | Configurable for any municipal corporation — Mumbai, Pune, Chennai |
+| Officer Hierarchy Management | Multi-level escalation chain with configurable org structure |
 
 ---
 
@@ -88,12 +83,51 @@ Citizen Notification
 |---------|-------------------|----------------|
 | Complaint Routing | Manual, slow | ✅ AI auto-assigns in seconds |
 | SLA Enforcement | None | ✅ Hard deadlines + auto-escalation |
-| Field Worker App | Not available | ✅ Mobile app for on-ground officers |
-| Resolution Proof | No verification | ✅ Photo upload confirmation |
-| Language Support | English only | ✅ Hindi + regional language NLP |
+| Resolution Proof | No verification | ✅ Before & After photo confirmation |
+| Language Support | English only | ✅ Hindi + English supported |
 | Performance Data | No dashboard | ✅ Real-time ward accountability map |
+| Lost Tracking ID | No recovery | ✅ Phone number lookup |
 
 **Core USP:** First complaint system where MCD leadership can see in real-time which ward officer is performing and which is not — creating accountability at every level, not just at the top.
+
+---
+
+## 🔁 System Architecture
+
+```
+Citizen Input Layer
+[Web Portal]
+          ↓
+AI Classification Engine (Groq LLM)
+[Auto-tags complaint type, priority, ward]
+          ↓
+Task Assignment Module
+[Maps complaint → correct ward officer]
+          ↓
+SLA & Escalation Engine
+[Timer starts → missed deadline → auto-escalates]
+          ↓
+Admin Dashboard (MCD Command Center)
+[Real-time complaints, SLA tracking, analytics]
+          ↓
+Citizen Tracking
+[Unique ID + Phone lookup + Before/After proof]
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Role |
+|------------|------|
+| React.js + Vite | Web portal + Admin dashboard frontend |
+| Firebase Firestore | Real-time complaint database |
+| Firebase Auth | Admin authentication |
+| Firebase Hosting | Production deployment |
+| Groq API (llama-3.1-8b-instant) | AI complaint classification |
+| Cloudinary | Before/After photo storage |
+| Tailwind CSS | UI styling |
+| Recharts | Analytics charts |
 
 ---
 
@@ -101,24 +135,39 @@ Citizen Notification
 
 ```
 JanSamadhan-AI/
-├── client/                  # React frontend
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── Home.jsx         # Citizen complaint submission
-│   │   │   ├── Track.jsx        # Complaint tracking by ID
-│   │   │   └── Dashboard.jsx    # Admin ward-level dashboard
-│   │   └── components/
-├── server/                  # Node.js + Express backend
-│   ├── routes/
-│   │   ├── complaints.js    # Complaint CRUD + assignment
-│   │   ├── officers.js      # Ward officer management
-│   │   └── dashboard.js     # Analytics endpoints
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── ComplaintCard.jsx
+│   │   ├── Footer.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── StatusBadge.jsx
+│   ├── pages/
+│   │   ├── AdminDashboard.jsx
+│   │   ├── AdminLogin.jsx
+│   │   ├── FileComplaint.jsx
+│   │   ├── Home.jsx
+│   │   └── TrackComplaint.jsx
 │   ├── services/
-│   │   ├── classifier.js    # AI classification engine
-│   │   ├── sla.js           # SLA timer + escalation logic
-│   │   └── notify.js        # WhatsApp/SMS notifications
-│   └── db/
-│       └── schema.sql       # PostgreSQL schema
+│   │   └── geminiClassifier.js
+│   ├── utils/
+│   │   ├── constants.js
+│   │   └── generateId.js
+│   ├── App.jsx
+│   ├── firebase.js
+│   ├── index.css
+│   └── main.jsx
+├── dist/
+├── .firebaserc
+├── .gitignore
+├── firebase.json
+├── firestore.rules
+├── index.html
+├── package.json
+├── postcss.config.js
+├── tailwind.config.js
+├── vite.config.js
 └── README.md
 ```
 
@@ -132,16 +181,14 @@ git clone https://github.com/Swastik-4752/JanSamadhan-AI.git
 cd JanSamadhan-AI
 
 # Install dependencies
-cd server && npm install
-cd ../client && npm install
+npm install
 
 # Set up environment variables
 cp .env.example .env
-# Add your API keys: OpenAI, Twilio, Google Maps, Clerk
+# Add: VITE_GROQ_API_KEY, Firebase config keys
 
 # Run development server
-cd server && npm run dev
-cd ../client && npm start
+npm run dev
 ```
 
 ---
@@ -159,8 +206,8 @@ cd ../client && npm start
 
 | Name | Role | Institution |
 |------|------|-------------|
-| Swastik Bankar | Project Lead + Full Stack Development + AI Integration | CSMSS College of Engineering, Chh. Sambhajinagar |
-| Krushna Dodke | Frontend Development + UI/UX Design + PPT Design | CSMSS College of Engineering, Chh. Sambhajinagar |
+| Swastik Bankar | Project Lead + Full Stack + AI Integration | CSMSS College of Engineering, Chh. Sambhajinagar |
+| Krushna Dodke | Frontend Development + UI/UX Design | CSMSS College of Engineering, Chh. Sambhajinagar |
 | Chetan Pise | Research + Documentation + Testing | CSMSS College of Engineering, Chh. Sambhajinagar |
 | Pralhad Tathe | Research + Documentation + Testing | CSMSS College of Engineering, Chh. Sambhajinagar |
 
@@ -169,11 +216,11 @@ cd ../client && npm start
 ## 📎 References
 
 - [MCD Official Portal](https://mcdonline.nic.in)
+- [Groq API](https://groq.com)
+- [Firebase](https://firebase.google.com)
+- [Cloudinary](https://cloudinary.com)
 - [Twilio WhatsApp API](https://twilio.com/whatsapp)
 - [Google Maps Platform](https://developers.google.com/maps)
-- [OpenAI API](https://platform.openai.com)
-- [Clerk Auth](https://clerk.com)
-- [Firebase](https://firebase.google.com)
 
 ---
 
