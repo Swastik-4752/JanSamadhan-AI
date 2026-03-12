@@ -57,10 +57,10 @@ function Navbar() {
                                     to={link.path}
                                     end={link.path === "/"}
                                     className={({ isActive }) =>
-                                        `px-4 py-2 text-sm font-medium transition-all duration-200 border-b-2 ${
+                                        `px-4 py-2 text-sm font-medium transition-all duration-200 ${
                                             isActive
-                                                ? "text-[#1A73E8] border-[#1A73E8]"
-                                                : "text-white border-transparent hover:text-[#1A73E8]"
+                                                ? "text-[#1A73E8]"
+                                                : "text-white hover:text-[#1A73E8]"
                                         }`
                                     }
                                 >
@@ -113,7 +113,7 @@ function Navbar() {
                                 className={({ isActive }) =>
                                     `block px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                                         isActive
-                                            ? "text-[#1A73E8] bg-[#1A73E8]/10 border-l-2 border-[#1A73E8]"
+                                            ? "text-[#1A73E8] bg-[#1A73E8]/10"
                                             : "text-white hover:text-[#1A73E8] hover:bg-dark-200"
                                     }`
                                 }
