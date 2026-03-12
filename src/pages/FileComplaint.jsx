@@ -4,6 +4,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { WARDS, CATEGORIES } from "../utils/constants";
 import { generateTrackingId } from "../utils/generateId";
+import { classifyComplaint } from "../services/geminiClassifier";
 import {
     CheckCircle,
     Copy,
@@ -16,6 +17,10 @@ import {
     Zap,
     Eye,
     FileText,
+    Bot,
+    ClipboardList,
+    AlertTriangle,
+    PartyPopper,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -40,10 +45,56 @@ function FileComplaint() {
     const [success, setSuccess] = useState(null); // null | { trackingId, priority }
     const [copied, setCopied] = useState(false);
 
+    /* ── AI Classification State ── */
+    const [aiClassifying, setAiClassifying] = useState(false);
+    const [aiSuggestion, setAiSuggestion] = useState(null);
+
     /* ── Helpers ── */
     const set = (key, val) => {
         setForm((prev) => ({ ...prev, [key]: val }));
         if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
+
+        // If user manually changes category or priority after AI classified,
+        // keep the banner but note that user has overridden
+        if (
+            aiSuggestion &&
+            (key === "category" || key === "priority")
+        ) {
+            setAiSuggestion((prev) => ({ ...prev, userOverridden: true }));
+        }
+    };
+
+    /* ── AI Classification Handler ── */
+    const handleDescriptionBlur = async () => {
+        const desc = form.description.trim();
+        if (desc.length <= 20) return;
+
+        setAiClassifying(true);
+        try {
+            const result = await classifyComplaint(desc);
+            if (result) {
+                setForm((prev) => ({
+                    ...prev,
+                    category: result.category,
+                    priority: result.priority,
+                }));
+                setAiSuggestion({
+                    category: result.category,
+                    priority: result.priority,
+                    userOverridden: false,
+                });
+                // Clear any existing category/priority errors
+                setErrors((prev) => ({
+                    ...prev,
+                    category: "",
+                    priority: "",
+                }));
+            }
+        } catch (err) {
+            console.error("AI classification failed:", err);
+        } finally {
+            setAiClassifying(false);
+        }
     };
 
     /* ── Validation ── */
@@ -70,21 +121,51 @@ function FileComplaint() {
 
         setSubmitting(true);
         try {
+            // If description hasn't been classified yet, classify now before saving
+            let finalCategory = form.category;
+            let finalPriority = form.priority;
+            let wasAiClassified = !!aiSuggestion;
+
+            if (!aiSuggestion && form.description.trim().length > 20) {
+                const result = await classifyComplaint(
+                    form.description.trim()
+                );
+                if (result) {
+                    finalCategory = result.category;
+                    finalPriority = result.priority;
+                    wasAiClassified = true;
+                    setForm((prev) => ({
+                        ...prev,
+                        category: result.category,
+                        priority: result.priority,
+                    }));
+                    setAiSuggestion({
+                        category: result.category,
+                        priority: result.priority,
+                        userOverridden: false,
+                    });
+                }
+            }
+
             const trackingId = generateTrackingId();
             await addDoc(collection(db, "complaints"), {
                 trackingId,
                 name: form.name.trim(),
                 phone: form.phone.trim(),
                 ward: form.ward,
-                category: form.category,
+                category: finalCategory || form.category,
                 description: form.description.trim(),
                 location: form.location.trim(),
-                priority: form.priority,
+                priority: finalPriority || form.priority,
                 status: "Pending",
+                aiClassified: wasAiClassified,
                 createdAt: serverTimestamp(),
                 resolvedAt: null,
             });
-            setSuccess({ trackingId, priority: form.priority });
+            setSuccess({
+                trackingId,
+                priority: finalPriority || form.priority,
+            });
         } catch (err) {
             console.error("Firestore error:", err);
             setErrors({ form: "Something went wrong. Please try again." });
@@ -106,6 +187,8 @@ function FileComplaint() {
         setForm(INITIAL);
         setErrors({});
         setSuccess(null);
+        setAiSuggestion(null);
+        setAiClassifying(false);
     };
 
     /* ═══════════════════════ RENDER ═══════════════════════ */
@@ -128,8 +211,9 @@ function FileComplaint() {
                         <span className="text-gray-200">File Complaint</span>
                     </nav>
 
-                    <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-                        📝 File a Complaint
+                    <h1 className="flex items-center gap-3 text-3xl sm:text-4xl font-bold mb-2">
+                        <FileText className="text-[#1A73E8]" size={32} />
+                        File a Complaint
                     </h1>
                     <p className="text-gray-400 max-w-2xl">
                         Your complaint will be assigned a unique tracking ID and
@@ -152,8 +236,9 @@ function FileComplaint() {
                                     />
                                 </div>
 
-                                <h2 className="text-2xl sm:text-3xl font-bold mb-2">
-                                    Complaint Filed Successfully! 🎉
+                                <h2 className="flex items-center justify-center gap-3 text-2xl sm:text-3xl font-bold mb-2">
+                                    Complaint Filed Successfully!
+                                    <PartyPopper className="text-gold" size={32} />
                                 </h2>
                                 <p className="text-gray-400 mb-8">
                                     Save this ID — you&apos;ll need it to track
@@ -335,8 +420,9 @@ function FileComplaint() {
                                                     : "border-dark-300 hover:border-dark-200 bg-dark-200"
                                             }`}
                                         >
-                                            <p className="font-semibold mb-1">
-                                                🚨 Urgent
+                                            <p className="flex items-center gap-2 font-semibold mb-1">
+                                                <AlertTriangle size={18} />
+                                                Urgent
                                             </p>
                                             <p className="text-gray-400 text-xs">
                                                 Resolution within 24 hours
@@ -353,8 +439,9 @@ function FileComplaint() {
                                                     : "border-dark-300 hover:border-dark-200 bg-dark-200"
                                             }`}
                                         >
-                                            <p className="font-semibold mb-1">
-                                                📋 Standard
+                                            <p className="flex items-center gap-2 font-semibold mb-1">
+                                                <ClipboardList size={18} />
+                                                Standard
                                             </p>
                                             <p className="text-gray-400 text-xs">
                                                 Resolution within 72 hours
@@ -374,6 +461,7 @@ function FileComplaint() {
                                         onChange={(e) =>
                                             set("description", e.target.value)
                                         }
+                                        onBlur={handleDescriptionBlur}
                                         maxLength={500}
                                         rows={4}
                                         placeholder="Describe the issue in detail (minimum 20 characters)"
@@ -391,6 +479,53 @@ function FileComplaint() {
                                         {form.description.length} / 500
                                         characters
                                     </p>
+
+                                    {/* AI Classifying Indicator */}
+                                    {aiClassifying && (
+                                        <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                            <Loader2
+                                                size={14}
+                                                className="animate-spin text-blue-400"
+                                            />
+                                            <span className="flex items-center gap-2 text-blue-300 text-xs font-medium">
+                                                <Bot size={14} />
+                                                AI is classifying your complaint...
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* AI Classification Result Banner */}
+                                    {aiSuggestion && !aiClassifying && (
+                                        <div className="flex items-center justify-between mt-2 px-3 py-2 rounded-lg bg-[#1A237E] border border-[#283593]">
+                                            <span className="flex items-center gap-2 text-white text-xs font-medium">
+                                                <Bot size={14} className="text-[#1A73E8]" />
+                                                AI Classified:{" "}
+                                                <span className="font-bold">
+                                                    {aiSuggestion.category}
+                                                </span>{" "}
+                                                ·{" "}
+                                                <span className="font-bold">
+                                                    {aiSuggestion.priority}
+                                                </span>{" "}
+                                                priority
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    // Scroll to category field and let user override
+                                                    setAiSuggestion(
+                                                        (prev) => ({
+                                                            ...prev,
+                                                            userOverridden: true,
+                                                        })
+                                                    );
+                                                }}
+                                                className="text-blue-300 text-xs hover:text-white transition-colors ml-3 shrink-0"
+                                            >
+                                                ✏️ Edit
+                                            </button>
+                                        </div>
+                                    )}
                                 </Field>
 
                                 {/* 7. Location */}
@@ -409,7 +544,7 @@ function FileComplaint() {
                                 {/* Submit */}
                                 <button
                                     type="submit"
-                                    disabled={submitting}
+                                    disabled={submitting || aiClassifying}
                                     className="w-full flex items-center justify-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20"
                                 >
                                     {submitting ? (

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Building2 } from "lucide-react";
 
 const navLinks = [
     { path: "/", label: "Home" },
@@ -24,7 +24,7 @@ function Navbar() {
                 <div className="flex items-center justify-between h-16">
                     {/* ── Logo ── */}
                     <Link to="/" className="flex items-center gap-2 select-none">
-                        <span className="text-xl">🏙️</span>
+                        <Building2 size={22} className="text-[#1A73E8]" />
                         <span className="text-[20px] font-bold text-white">
                             JanSamadhan
                         </span>

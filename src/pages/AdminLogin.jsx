@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, Loader2, ShieldCheck, Building2 } from "lucide-react";
 
 function AdminLogin() {
     const [email, setEmail] = useState("");
@@ -96,7 +96,7 @@ function AdminLogin() {
 
                             {/* MCD Badge */}
                             <div className="inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs font-semibold">
-                                🏛️ Municipal Corporation of Delhi
+                                <Building2 size={14} /> Municipal Corporation of Delhi
                             </div>
                         </div>
 

@@ -33,6 +33,7 @@ import {
     Search,
     X,
     Database,
+    BarChart2,
 } from "lucide-react";
 import { CATEGORIES, STATUSES, WARDS } from "../utils/constants";
 import toast from "react-hot-toast";
@@ -98,11 +99,11 @@ function getSlaInfo(complaint) {
     const now = new Date();
 
     if (complaint.status === "Resolved") {
-        return { label: "✅ Met", color: "text-green-400" };
+        return { label: <><CheckCircle size={14} className="inline mr-1 -mt-0.5" /> Met</>, color: "text-green-400" };
     }
 
     if (now > deadline) {
-        return { label: "⚠️ Breached", color: "text-red-400" };
+        return { label: <><AlertTriangle size={14} className="inline mr-1 -mt-0.5" /> Breached</>, color: "text-red-400" };
     }
 
     const hoursLeft = differenceInHours(deadline, now);
@@ -262,8 +263,9 @@ function AdminDashboard() {
                                 JS
                             </div>
                             <div>
-                                <h1 className="text-white font-bold text-lg leading-tight">
-                                    📊 MCD Command Center
+                                <h1 className="flex items-center gap-2 text-white font-bold text-lg leading-tight">
+                                    <BarChart2 className="text-[#1A73E8]" size={20} />
+                                    MCD Command Center
                                 </h1>
                                 <p className="text-gray-500 text-xs">
                                     {format(currentTime, "EEEE, dd MMMM yyyy — hh:mm:ss a")}

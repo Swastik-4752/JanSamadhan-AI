@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Building2 } from "lucide-react";
 
 const quickLinks = [
     { path: "/", label: "Home" },
@@ -16,7 +17,7 @@ function Footer() {
                     {/* ── Left Column: Brand ── */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
-                            <span className="text-xl">🏙️</span>
+                            <Building2 size={22} className="text-[#1A73E8]" />
                             <span className="text-[20px] font-bold text-white">
                                 JanSamadhan
                             </span>

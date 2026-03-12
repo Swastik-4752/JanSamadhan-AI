@@ -21,18 +21,24 @@ import {
     Star,
     ArrowRight,
     XCircle,
+    Trash2,
+    Droplets,
+    Lightbulb,
+    Waves,
+    ClipboardList,
+    Construction,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 /* ── Category icon map ── */
 const catIcons = {
-    "Road & Potholes": "🛣️",
-    "Garbage & Sanitation": "🗑️",
-    "Water Leakage": "💧",
-    Streetlight: "💡",
-    Drainage: "🌊",
-    Other: "📋",
+    "Road & Potholes": <Construction size={16} />,
+    "Garbage & Sanitation": <Trash2 size={16} />,
+    "Water Leakage": <Droplets size={16} />,
+    Streetlight: <Lightbulb size={16} />,
+    Drainage: <Waves size={16} />,
+    Other: <ClipboardList size={16} />,
 };
 
 /* ── Status colours ── */
@@ -139,7 +145,8 @@ function TrackComplaint() {
             const mins = Math.floor((diffMs % 3600000) / 60000);
             return {
                 type: "resolved",
-                text: `✅ Resolved in ${hrs} hours ${mins} minutes`,
+                icon: <CheckCircle size={16} className="inline mr-1.5 align-text-bottom" />,
+                text: `Resolved in ${hrs} hours ${mins} minutes`,
                 subtext: null,
             };
         }
@@ -148,7 +155,8 @@ function TrackComplaint() {
         if (now > deadline) {
             return {
                 type: "breached",
-                text: "⚠️ SLA Breached — This complaint is overdue",
+                icon: <AlertTriangle size={16} className="inline mr-1.5 align-text-bottom text-red-400" />,
+                text: "SLA Breached — This complaint is overdue",
                 subtext:
                     "It has been escalated to senior officer.",
             };
@@ -159,7 +167,8 @@ function TrackComplaint() {
         const mins = Math.floor((remaining % 3600000) / 60000);
         return {
             type: "within",
-            text: `⏱️ Time Remaining: ${hrs}hrs ${mins}mins`,
+            icon: <Clock size={16} className="inline mr-1.5 align-text-bottom text-yellow-500" />,
+            text: `Time Remaining: ${hrs}hrs ${mins}mins`,
             subtext: `Deadline: ${fmtDate({ toDate: () => deadline })}`,
         };
     };
@@ -184,8 +193,9 @@ function TrackComplaint() {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* ── Header ── */}
                 <div className="text-center mb-10">
-                    <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-                        🔍 Track Your Complaint
+                    <h1 className="flex items-center justify-center gap-3 text-3xl sm:text-4xl font-bold mb-2">
+                        <Search className="text-[#1A73E8]" size={36} />
+                        Track Your Complaint
                     </h1>
                     <p className="text-gray-400">
                         Enter your tracking ID to see real-time status
@@ -260,12 +270,12 @@ function TrackComplaint() {
                                     size={36}
                                     className="text-green-400 mx-auto mb-3"
                                 />
-                                <p className="text-green-300 text-lg font-bold">
-                                    ✅ Your complaint has been resolved!
-                                </p>
+                                <div className="flex items-center justify-center gap-2 text-green-300 text-lg font-bold">
+                                    Your complaint has been resolved!
+                                </div>
                                 {sla && (
                                     <p className="text-green-400/80 text-sm mt-1">
-                                        {sla.text.replace("✅ ", "")}
+                                        {sla.text}
                                     </p>
                                 )}
 
@@ -323,14 +333,22 @@ function TrackComplaint() {
                                         {c.status}
                                     </span>
                                     <span
-                                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
                                             priorityColor[c.priority] ||
                                             priorityColor.Standard
                                         }`}
                                     >
-                                        {c.priority === "Urgent"
-                                            ? "🚨 Urgent"
-                                            : "📋 Standard"}
+                                        {c.priority === "Urgent" ? (
+                                            <>
+                                                <AlertTriangle size={12} />
+                                                Urgent
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ClipboardList size={12} />
+                                                Standard
+                                            </>
+                                        )}
                                     </span>
                                 </div>
                             </div>
@@ -416,6 +434,7 @@ function TrackComplaint() {
                                                 : "text-green-400"
                                         }`}
                                     >
+                                        {sla.icon}
                                         {sla.text}
                                     </p>
                                     {sla.subtext && (
@@ -447,10 +466,10 @@ function TrackComplaint() {
                                         }
                                         label="Category"
                                         value={
-                                            <>
-                                                {catIcons[c.category] || "📋"}{" "}
-                                                {c.category}
-                                            </>
+                                            <div className="flex items-center gap-2">
+                                                {catIcons[c.category] || <ClipboardList size={16} />}
+                                                <span>{c.category}</span>
+                                            </div>
                                         }
                                     />
                                     <Detail

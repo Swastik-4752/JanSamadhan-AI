@@ -1,7 +1,20 @@
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import {
+    ArrowRight,
+    ChevronRight,
+    FileText,
+    Bot,
+    MapPin,
+    CheckCircle,
+    Trash2,
+    Droplets,
+    Lightbulb,
+    Waves,
+    ClipboardList,
+    Construction,
+} from "lucide-react";
 
 /* ── Data ── */
 const stats = [
@@ -14,37 +27,37 @@ const stats = [
 const steps = [
     {
         num: 1,
-        icon: "📝",
+        icon: <FileText size={36} />,
         title: "File Complaint",
         desc: "Submit via web in Hindi or English",
     },
     {
         num: 2,
-        icon: "🤖",
+        icon: <Bot size={36} />,
         title: "AI Classification",
         desc: "Auto-assigned to correct ward officer instantly",
     },
     {
         num: 3,
-        icon: "📍",
+        icon: <MapPin size={36} />,
         title: "Track Progress",
         desc: "Real-time status updates with tracking ID",
     },
     {
         num: 4,
-        icon: "✅",
+        icon: <CheckCircle size={36} />,
         title: "Resolution Proof",
         desc: "Photo confirmation sent on completion",
     },
 ];
 
 const categories = [
-    { icon: "🛣️", label: "Road & Potholes" },
-    { icon: "🗑️", label: "Garbage & Sanitation" },
-    { icon: "💧", label: "Water Leakage" },
-    { icon: "💡", label: "Streetlight" },
-    { icon: "🌊", label: "Drainage" },
-    { icon: "📋", label: "Other Issues" },
+    { icon: <Construction size={36} />, label: "Road & Potholes" },
+    { icon: <Trash2 size={36} />, label: "Garbage & Sanitation" },
+    { icon: <Droplets size={36} />, label: "Water Leakage" },
+    { icon: <Lightbulb size={36} />, label: "Streetlight" },
+    { icon: <Waves size={36} />, label: "Drainage" },
+    { icon: <ClipboardList size={36} />, label: "Other Issues" },
 ];
 
 function Home() {
@@ -54,7 +67,7 @@ function Home() {
 
             {/* ═══════════ SECTION 1 — HERO ═══════════ */}
             <section
-                className="relative min-h-screen flex items-center justify-center px-4"
+                className="relative flex items-center justify-center px-4 pt-24 pb-16"
                 style={{
                     background: `
                         linear-gradient(rgba(10,10,10,0.95), rgba(10,10,10,0.85)),
@@ -72,11 +85,9 @@ function Home() {
                 <div className="relative z-10 text-center max-w-4xl mx-auto">
                     {/* Badge */}
                     <div className="inline-flex items-center gap-2 bg-dark-100 border border-dark-300 rounded-full px-5 py-2 mb-8">
-                        <span className="text-sm">🏆</span>
                         <span className="text-sm text-gray-300 font-medium">
                             India Innovates 2026{" "}
-                            <span className="text-gold">|</span> Digital
-                            Democracy
+                            <span className="text-gold">|</span> Digital Democracy
                         </span>
                     </div>
 
@@ -100,14 +111,14 @@ function Home() {
                             to="/file-complaint"
                             className="inline-flex items-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
                         >
-                            📝 File a Complaint
+                            File a Complaint
                             <ArrowRight size={18} />
                         </Link>
                         <Link
                             to="/track"
                             className="inline-flex items-center gap-2 border-2 border-white/20 hover:border-white/40 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:bg-white/5"
                         >
-                            🔍 Track Your Complaint
+                            Track Your Complaint
                         </Link>
                     </div>
                 </div>
@@ -164,7 +175,7 @@ function Home() {
                                     </div>
 
                                     {/* Icon */}
-                                    <div className="text-4xl mb-3">
+                                    <div className="flex justify-center mb-4 text-[#1A73E8]">
                                         {step.icon}
                                     </div>
 
@@ -197,11 +208,12 @@ function Home() {
                             <Link
                                 key={cat.label}
                                 to="/file-complaint"
-                                className="group bg-dark-100 border border-dark-300 rounded-2xl p-6 text-center
-                                    hover:-translate-y-1 hover:border-[#1A73E8]/50 hover:shadow-lg hover:shadow-[#1A73E8]/10
+                                className="group bg-dark-100 border border-dark-300 rounded-2xl p-4 text-center
+                                    hover:-translate-y-1 hover:border-[#1A73E8]/60
+                                    hover:shadow-[0_0_18px_2px_rgba(26,115,232,0.35)]
                                     transition-all duration-300"
                             >
-                                <div className="text-4xl mb-3">
+                                <div className="flex justify-center mb-3 text-gray-300 group-hover:text-[#1A73E8] transition-colors duration-200">
                                     {cat.icon}
                                 </div>
                                 <p className="text-white font-medium text-sm group-hover:text-[#1A73E8] transition-colors duration-200">
