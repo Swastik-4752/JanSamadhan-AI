@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
     collection,
     query,
@@ -6,129 +7,516 @@ import {
     getDocs,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { STATUSES } from "../utils/constants";
+import {
+    Search,
+    Loader2,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    MapPin,
+    Tag,
+    User,
+    FileText,
+    Star,
+    ArrowRight,
+    XCircle,
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import ComplaintCard from "../components/ComplaintCard";
-import { Search, ArrowLeft, FileQuestion } from "lucide-react";
-import { Link } from "react-router-dom";
+
+/* ── Category icon map ── */
+const catIcons = {
+    "Road & Potholes": "🛣️",
+    "Garbage & Sanitation": "🗑️",
+    "Water Leakage": "💧",
+    Streetlight: "💡",
+    Drainage: "🌊",
+    Other: "📋",
+};
+
+/* ── Status colours ── */
+const statusColor = {
+    Pending: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+    Assigned: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    "In Progress": "bg-orange-500/10 text-orange-400 border-orange-500/30",
+    Resolved: "bg-green-500/10 text-green-400 border-green-500/30",
+};
+
+const priorityColor = {
+    Urgent: "bg-red-500/10 text-red-400 border-red-500/30",
+    Standard: "bg-gray-500/10 text-gray-300 border-gray-500/30",
+};
+
+/* ── Step list for the stepper ── */
+const STEP_ORDER = STATUSES; // ["Pending", "Assigned", "In Progress", "Resolved"]
 
 function TrackComplaint() {
-    const [searchId, setSearchId] = useState("");
-    const [complaint, setComplaint] = useState(null);
+    const [searchParams] = useSearchParams();
+    const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    const [searched, setSearched] = useState(false);
+    const [complaint, setComplaint] = useState(null); // null | object | "not_found"
+    const [rating, setRating] = useState(0);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchId.trim()) return;
+    /* Auto-search from URL params */
+    useEffect(() => {
+        const id = searchParams.get("id");
+        if (id) {
+            setInput(id);
+            doSearch(id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
+    /* ── Firestore query ── */
+    const doSearch = async (trackingId) => {
+        const id = (trackingId || input).trim();
+        if (!id) return;
         setLoading(true);
-        setSearched(true);
         setComplaint(null);
+        setRating(0);
 
         try {
             const q = query(
                 collection(db, "complaints"),
-                where("trackingId", "==", searchId.trim().toUpperCase())
+                where("trackingId", "==", id)
             );
-            const snapshot = await getDocs(q);
-
-            if (!snapshot.empty) {
-                const doc = snapshot.docs[0];
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                setComplaint("not_found");
+            } else {
+                const doc = snap.docs[0];
                 setComplaint({ id: doc.id, ...doc.data() });
             }
-        } catch (error) {
-            console.error("Error tracking complaint:", error);
+        } catch (err) {
+            console.error("Search error:", err);
+            setComplaint("not_found");
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        doSearch();
+    };
+
+    /* ── Formatters / helpers ── */
+    const fmtDate = (ts) => {
+        if (!ts) return "—";
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        return d.toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+        });
+    };
+
+    const getStepIndex = (status) =>
+        STEP_ORDER.indexOf(status) === -1 ? 0 : STEP_ORDER.indexOf(status);
+
+    /** SLA logic — returns { type, text, subtext } */
+    const getSLA = (c) => {
+        if (!c || !c.createdAt) return null;
+
+        const created = c.createdAt.toDate
+            ? c.createdAt.toDate()
+            : new Date(c.createdAt);
+        const slaHrs = c.priority === "Urgent" ? 24 : 72;
+        const deadline = new Date(created.getTime() + slaHrs * 3600000);
+
+        if (c.status === "Resolved") {
+            const resolved = c.resolvedAt
+                ? c.resolvedAt.toDate
+                    ? c.resolvedAt.toDate()
+                    : new Date(c.resolvedAt)
+                : new Date();
+            const diffMs = resolved - created;
+            const hrs = Math.floor(diffMs / 3600000);
+            const mins = Math.floor((diffMs % 3600000) / 60000);
+            return {
+                type: "resolved",
+                text: `✅ Resolved in ${hrs} hours ${mins} minutes`,
+                subtext: null,
+            };
+        }
+
+        const now = new Date();
+        if (now > deadline) {
+            return {
+                type: "breached",
+                text: "⚠️ SLA Breached — This complaint is overdue",
+                subtext:
+                    "It has been escalated to senior officer.",
+            };
+        }
+
+        const remaining = deadline - now;
+        const hrs = Math.floor(remaining / 3600000);
+        const mins = Math.floor((remaining % 3600000) / 60000);
+        return {
+            type: "within",
+            text: `⏱️ Time Remaining: ${hrs}hrs ${mins}mins`,
+            subtext: `Deadline: ${fmtDate({ toDate: () => deadline })}`,
+        };
+    };
+
+    /** Privacy-safe name: "Swastik Bhoite" → "Swastik B." */
+    const safeName = (name) => {
+        if (!name) return "—";
+        const parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0];
+        return `${parts[0]} ${parts[parts.length - 1][0]}.`;
+    };
+
+    /* ════════════════════════ RENDER ════════════════════════ */
+    const c = typeof complaint === "object" && complaint ? complaint : null;
+    const stepIdx = c ? getStepIndex(c.status) : 0;
+    const sla = c ? getSLA(c) : null;
+
     return (
-        <div className="min-h-screen bg-dark flex flex-col">
+        <div className="min-h-screen bg-[#0A0A0A] text-white">
             <Navbar />
-            <div className="flex-1 max-w-2xl mx-auto px-4 py-12 w-full">
-                {/* Header */}
-                <div className="mb-8 animate-fade-in-up">
-                    <Link
-                        to="/"
-                        className="inline-flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-4 transition-colors"
-                    >
-                        <ArrowLeft size={14} />
-                        Back to Home
-                    </Link>
-                    <h1 className="text-3xl font-bold text-white">Track Complaint</h1>
-                    <p className="text-gray-500 mt-1">
-                        Enter your tracking ID to check the current status of your
-                        complaint.
+
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                {/* ── Header ── */}
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+                        🔍 Track Your Complaint
+                    </h1>
+                    <p className="text-gray-400">
+                        Enter your tracking ID to see real-time status
                     </p>
                 </div>
 
-                {/* Search Form */}
+                {/* ── Search ── */}
                 <form
-                    onSubmit={handleSearch}
-                    className="card mb-6 animate-fade-in-up"
-                    style={{ animationDelay: "0.1s" }}
+                    onSubmit={handleSubmit}
+                    className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mb-12"
                 >
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                        Tracking ID
-                    </label>
-                    <div className="flex gap-3">
-                        <input
-                            type="text"
-                            value={searchId}
-                            onChange={(e) => setSearchId(e.target.value)}
-                            placeholder="e.g. JS-20260312-4752"
-                            className="input-dark flex-1 font-mono"
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary flex items-center gap-2 px-6"
-                        >
-                            {loading ? (
-                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                        fill="none"
-                                    />
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                                    />
-                                </svg>
-                            ) : (
-                                <Search size={18} />
-                            )}
-                            Search
-                        </button>
-                    </div>
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Enter tracking ID (e.g. JS-20260312-4752)"
+                        className="flex-1 bg-dark-100 border border-dark-300 rounded-xl px-5 py-3.5 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8]/50 focus:border-[#1A73E8] transition-all"
+                    />
+                    <button
+                        type="submit"
+                        disabled={loading || !input.trim()}
+                        className="inline-flex items-center justify-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20"
+                    >
+                        <Search size={18} />
+                        Search
+                    </button>
                 </form>
 
-                {/* Result */}
-                {searched && !loading && (
-                    <div className="animate-fade-in-up">
-                        {complaint ? (
-                            <ComplaintCard complaint={complaint} />
-                        ) : (
-                            <div className="card text-center py-12">
-                                <FileQuestion className="text-gray-600 mx-auto mb-3" size={48} />
-                                <p className="text-gray-400 font-medium">No complaint found</p>
-                                <p className="text-gray-600 text-sm mt-1">
-                                    Double-check your tracking ID and try again.
+                {/* ── Loading ── */}
+                {loading && (
+                    <div className="text-center py-16">
+                        <Loader2
+                            size={40}
+                            className="animate-spin text-[#1A73E8] mx-auto mb-4"
+                        />
+                        <p className="text-gray-400">
+                            Searching for your complaint...
+                        </p>
+                    </div>
+                )}
+
+                {/* ── Not Found ── */}
+                {complaint === "not_found" && (
+                    <div className="text-center py-16 bg-dark-100 border border-dark-300 rounded-2xl">
+                        <XCircle
+                            size={48}
+                            className="text-red-400 mx-auto mb-4"
+                        />
+                        <h2 className="text-xl font-bold mb-2">
+                            No complaint found with this ID
+                        </h2>
+                        <p className="text-gray-400 mb-6">
+                            Please check your tracking ID and try again
+                        </p>
+                        <Link
+                            to="/file-complaint"
+                            className="inline-flex items-center gap-2 text-[#1A73E8] hover:underline font-medium"
+                        >
+                            File a new complaint
+                            <ArrowRight size={16} />
+                        </Link>
+                    </div>
+                )}
+
+                {/* ── Complaint Found ── */}
+                {c && (
+                    <div className="space-y-6">
+                        {/* ─ Resolved Banner ─ */}
+                        {c.status === "Resolved" && (
+                            <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-6 text-center">
+                                <CheckCircle
+                                    size={36}
+                                    className="text-green-400 mx-auto mb-3"
+                                />
+                                <p className="text-green-300 text-lg font-bold">
+                                    ✅ Your complaint has been resolved!
                                 </p>
+                                {sla && (
+                                    <p className="text-green-400/80 text-sm mt-1">
+                                        {sla.text.replace("✅ ", "")}
+                                    </p>
+                                )}
+
+                                {/* Star rating (UI only) */}
+                                <div className="mt-5">
+                                    <p className="text-gray-300 text-sm mb-2">
+                                        Rate your experience
+                                    </p>
+                                    <div className="flex items-center justify-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                            <button
+                                                key={s}
+                                                onClick={() => setRating(s)}
+                                                className="transition-transform hover:scale-110"
+                                            >
+                                                <Star
+                                                    size={28}
+                                                    className={
+                                                        s <= rating
+                                                            ? "text-gold fill-gold"
+                                                            : "text-dark-300"
+                                                    }
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {rating > 0 && (
+                                        <p className="text-gold text-xs mt-2">
+                                            Thank you for your feedback!
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         )}
+
+                        {/* ─ Top Card ─ */}
+                        <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6 sm:p-8">
+                            {/* Header row */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                                <div>
+                                    <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">
+                                        Tracking ID
+                                    </p>
+                                    <p className="text-2xl sm:text-3xl font-mono font-bold text-gold tracking-wider">
+                                        {c.trackingId}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                                            statusColor[c.status] ||
+                                            statusColor.Pending
+                                        }`}
+                                    >
+                                        {c.status}
+                                    </span>
+                                    <span
+                                        className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                                            priorityColor[c.priority] ||
+                                            priorityColor.Standard
+                                        }`}
+                                    >
+                                        {c.priority === "Urgent"
+                                            ? "🚨 Urgent"
+                                            : "📋 Standard"}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Filed date */}
+                            <div className="flex items-center gap-2 text-gray-400 text-sm mb-8">
+                                <Clock size={14} />
+                                <span>Filed on {fmtDate(c.createdAt)}</span>
+                            </div>
+
+                            {/* ─── Progress Stepper ─── */}
+                            <div className="mb-8">
+                                <div className="flex items-center justify-between">
+                                    {STEP_ORDER.map((step, idx) => {
+                                        const completed = idx < stepIdx;
+                                        const current = idx === stepIdx;
+                                        return (
+                                            <div
+                                                key={step}
+                                                className="flex items-center flex-1 last:flex-none"
+                                            >
+                                                {/* Circle */}
+                                                <div className="flex flex-col items-center">
+                                                    <div
+                                                        className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                                                            completed
+                                                                ? "bg-[#1A73E8] text-white"
+                                                                : current
+                                                                ? "bg-[#1A73E8]/20 text-[#1A73E8] ring-4 ring-[#1A73E8]/20 animate-pulse"
+                                                                : "bg-dark-200 text-gray-500 border border-dark-300"
+                                                        }`}
+                                                    >
+                                                        {completed ? (
+                                                            <CheckCircle
+                                                                size={18}
+                                                            />
+                                                        ) : (
+                                                            idx + 1
+                                                        )}
+                                                    </div>
+                                                    <span
+                                                        className={`text-[10px] sm:text-xs mt-2 font-medium text-center ${
+                                                            completed || current
+                                                                ? "text-white"
+                                                                : "text-gray-500"
+                                                        }`}
+                                                    >
+                                                        {step}
+                                                    </span>
+                                                </div>
+
+                                                {/* Connector line */}
+                                                {idx < STEP_ORDER.length - 1 && (
+                                                    <div
+                                                        className={`flex-1 h-0.5 mx-2 rounded ${
+                                                            idx < stepIdx
+                                                                ? "bg-[#1A73E8]"
+                                                                : "bg-dark-300"
+                                                        }`}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* ─── SLA Box ─── */}
+                            {sla && (
+                                <div
+                                    className={`rounded-xl p-4 mb-8 border ${
+                                        sla.type === "breached"
+                                            ? "bg-red-500/10 border-red-500/30"
+                                            : sla.type === "resolved"
+                                            ? "bg-green-500/10 border-green-500/30"
+                                            : "bg-green-500/10 border-green-500/30"
+                                    }`}
+                                >
+                                    <p
+                                        className={`font-semibold text-sm ${
+                                            sla.type === "breached"
+                                                ? "text-red-400"
+                                                : "text-green-400"
+                                        }`}
+                                    >
+                                        {sla.text}
+                                    </p>
+                                    {sla.subtext && (
+                                        <p
+                                            className={`text-xs mt-1 ${
+                                                sla.type === "breached"
+                                                    ? "text-red-400/70"
+                                                    : "text-green-400/70"
+                                            }`}
+                                        >
+                                            {sla.subtext}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ─── Complaint Details ─── */}
+                            <div>
+                                <h3 className="text-lg font-bold mb-4 text-gold">
+                                    Complaint Details
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <Detail
+                                        icon={
+                                            <Tag
+                                                size={16}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        }
+                                        label="Category"
+                                        value={
+                                            <>
+                                                {catIcons[c.category] || "📋"}{" "}
+                                                {c.category}
+                                            </>
+                                        }
+                                    />
+                                    <Detail
+                                        icon={
+                                            <MapPin
+                                                size={16}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        }
+                                        label="Ward"
+                                        value={c.ward}
+                                    />
+                                    <Detail
+                                        icon={
+                                            <User
+                                                size={16}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        }
+                                        label="Filed By"
+                                        value={safeName(c.name)}
+                                    />
+                                    {c.location && (
+                                        <Detail
+                                            icon={
+                                                <MapPin
+                                                    size={16}
+                                                    className="text-[#1A73E8]"
+                                                />
+                                            }
+                                            label="Location"
+                                            value={c.location}
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Description */}
+                                <div className="mt-5">
+                                    <div className="flex items-center gap-2 text-gray-400 text-xs uppercase tracking-wider mb-2">
+                                        <FileText size={14} />
+                                        Description
+                                    </div>
+                                    <p className="text-gray-300 text-sm leading-relaxed bg-dark-200 rounded-xl p-4 border border-dark-300">
+                                        {c.description}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
+
             <Footer />
+        </div>
+    );
+}
+
+/* ── Detail row helper ── */
+function Detail({ icon, label, value }) {
+    return (
+        <div className="flex items-start gap-3 bg-dark-200 rounded-xl p-3 border border-dark-300">
+            <div className="mt-0.5 shrink-0">{icon}</div>
+            <div>
+                <p className="text-gray-400 text-xs">{label}</p>
+                <p className="text-white text-sm font-medium">{value}</p>
+            </div>
         </div>
     );
 }

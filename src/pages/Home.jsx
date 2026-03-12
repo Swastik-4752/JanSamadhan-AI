@@ -1,208 +1,241 @@
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { Link } from "react-router-dom";
-import {
-    FileText,
-    Search,
-    BarChart3,
-    Shield,
-    Clock,
-    MapPin,
-    ArrowRight,
-    Zap,
-} from "lucide-react";
+import { ArrowRight, ChevronRight } from "lucide-react";
 
-const features = [
+/* ── Data ── */
+const stats = [
+    { value: "20M+", label: "Delhi Citizens" },
+    { value: "272", label: "Wards Covered" },
+    { value: "24hr", label: "Urgent SLA" },
+    { value: "Real-Time", label: "Live Tracking" },
+];
+
+const steps = [
     {
-        icon: FileText,
+        num: 1,
+        icon: "📝",
         title: "File Complaint",
-        desc: "Report civic issues like potholes, garbage, water leakage with a unique tracking ID.",
-        color: "text-blue-400",
-        bg: "bg-blue-500/10",
+        desc: "Submit via web in Hindi or English",
     },
     {
-        icon: Search,
-        title: "Track in Real-Time",
-        desc: "Follow your complaint status from submission to resolution — complete transparency.",
-        color: "text-green-400",
-        bg: "bg-green-500/10",
+        num: 2,
+        icon: "🤖",
+        title: "AI Classification",
+        desc: "Auto-assigned to correct ward officer instantly",
     },
     {
-        icon: Clock,
-        title: "SLA Enforcement",
-        desc: "Urgent complaints get 24hr deadline, Standard gets 72hr. Missed SLA = auto-escalation.",
-        color: "text-yellow-400",
-        bg: "bg-yellow-500/10",
+        num: 3,
+        icon: "📍",
+        title: "Track Progress",
+        desc: "Real-time status updates with tracking ID",
     },
     {
-        icon: BarChart3,
-        title: "Ward Analytics",
-        desc: "Real-time performance dashboard showing ward-level complaint data and resolution rates.",
-        color: "text-purple-400",
-        bg: "bg-purple-500/10",
-    },
-    {
-        icon: MapPin,
-        title: "Auto Ward Assignment",
-        desc: "Complaints are automatically assigned to the right ward and officer based on location.",
-        color: "text-orange-400",
-        bg: "bg-orange-500/10",
-    },
-    {
-        icon: Shield,
-        title: "Government Credible",
-        desc: "Built for Municipal Corporation of Delhi with secure, accountable data handling.",
-        color: "text-gold",
-        bg: "bg-gold/10",
+        num: 4,
+        icon: "✅",
+        title: "Resolution Proof",
+        desc: "Photo confirmation sent on completion",
     },
 ];
 
-const stats = [
-    { value: "20M+", label: "Citizens Served" },
-    { value: "272", label: "Wards Covered" },
-    { value: "24hr", label: "Urgent SLA" },
-    { value: "99.9%", label: "Uptime" },
+const categories = [
+    { icon: "🛣️", label: "Road & Potholes" },
+    { icon: "🗑️", label: "Garbage & Sanitation" },
+    { icon: "💧", label: "Water Leakage" },
+    { icon: "💡", label: "Streetlight" },
+    { icon: "🌊", label: "Drainage" },
+    { icon: "📋", label: "Other Issues" },
 ];
 
 function Home() {
     return (
-        <div className="min-h-screen bg-dark flex flex-col">
+        <div className="min-h-screen bg-[#0A0A0A] text-white">
             <Navbar />
 
-            {/* Hero Section */}
-            <section className="relative overflow-hidden">
-                {/* Background Gradient Orbs */}
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
-
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
-                    <div className="text-center max-w-4xl mx-auto">
-                        {/* Badge */}
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-6 animate-fade-in-up">
-                            <Zap size={14} />
-                            AI-Powered Civic Complaint System
-                        </div>
-
-                        {/* Title */}
-                        <h1
-                            className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-tight mb-6 animate-fade-in-up"
-                            style={{ animationDelay: "0.1s" }}
-                        >
-                            <span className="text-white">Jan</span>
-                            <span className="gradient-text">Samadhan</span>
-                            <span className="text-white"> AI</span>
-                        </h1>
-
-                        {/* Subtitle */}
-                        <p
-                            className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-8 leading-relaxed animate-fade-in-up"
-                            style={{ animationDelay: "0.2s" }}
-                        >
-                            India's first ward-level civic complaint intelligence system.
-                            Report issues. Track resolutions. Hold officers accountable.
-                            <br />
-                            <span className="text-gold font-medium">
-                                Municipal Corporation of Delhi
-                            </span>
-                        </p>
-
-                        {/* CTA Buttons */}
-                        <div
-                            className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up"
-                            style={{ animationDelay: "0.3s" }}
-                        >
-                            <Link
-                                to="/file-complaint"
-                                className="btn-primary flex items-center gap-2 text-base px-8 py-3"
-                            >
-                                <FileText size={18} />
-                                File a Complaint
-                                <ArrowRight size={16} />
-                            </Link>
-                            <Link
-                                to="/track"
-                                className="flex items-center gap-2 px-8 py-3 rounded-lg text-base font-semibold text-white border border-dark-300 hover:border-primary/50 hover:bg-dark-100 transition-all duration-200"
-                            >
-                                <Search size={18} />
-                                Track Complaint
-                            </Link>
-                        </div>
-                    </div>
+            {/* ═══════════ SECTION 1 — HERO ═══════════ */}
+            <section
+                className="relative min-h-screen flex items-center justify-center px-4"
+                style={{
+                    background: `
+                        linear-gradient(rgba(10,10,10,0.95), rgba(10,10,10,0.85)),
+                        linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px),
+                        linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px)
+                    `,
+                    backgroundSize: "100% 100%, 40px 40px, 40px 40px",
+                }}
+            >
+                {/* Radial glow behind content */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#1A73E8]/5 rounded-full blur-[120px]" />
                 </div>
-            </section>
 
-            {/* Stats Strip */}
-            <section className="border-y border-dark-300 bg-dark-100/50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {stats.map((stat, i) => (
-                            <div key={i} className="text-center">
-                                <p className="text-2xl md:text-3xl font-extrabold gradient-text">
-                                    {stat.value}
-                                </p>
-                                <p className="text-gray-500 text-sm mt-1">{stat.label}</p>
-                            </div>
-                        ))}
+                <div className="relative z-10 text-center max-w-4xl mx-auto">
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 bg-dark-100 border border-dark-300 rounded-full px-5 py-2 mb-8">
+                        <span className="text-sm">🏆</span>
+                        <span className="text-sm text-gray-300 font-medium">
+                            India Innovates 2026{" "}
+                            <span className="text-gold">|</span> Digital
+                            Democracy
+                        </span>
                     </div>
-                </div>
-            </section>
 
-            {/* Features Grid */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-                        How It Works
-                    </h2>
-                    <p className="text-gray-500 max-w-xl mx-auto">
-                        A complete civic complaint lifecycle — from filing to resolution,
-                        with full transparency at every step.
+                    {/* Headline */}
+                    <h1 className="text-4xl sm:text-5xl md:text-[48px] font-bold leading-tight mb-6">
+                        Delhi&apos;s Civic Complaint System —{" "}
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1A73E8] to-blue-400">
+                            Reimagined
+                        </span>
+                    </h1>
+
+                    {/* Sub-headline */}
+                    <p className="text-gray-400 text-lg sm:text-[18px] max-w-2xl mx-auto mb-10 leading-relaxed">
+                        File complaints, track resolution, hold officers
+                        accountable. Powered by AI.
                     </p>
+
+                    {/* CTA Buttons */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <Link
+                            to="/file-complaint"
+                            className="inline-flex items-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30"
+                        >
+                            📝 File a Complaint
+                            <ArrowRight size={18} />
+                        </Link>
+                        <Link
+                            to="/track"
+                            className="inline-flex items-center gap-2 border-2 border-white/20 hover:border-white/40 text-white font-semibold px-8 py-3.5 rounded-xl transition-all duration-200 hover:bg-white/5"
+                        >
+                            🔍 Track Your Complaint
+                        </Link>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {features.map((feat, i) => (
-                        <div
-                            key={i}
-                            className="card-hover group animate-fade-in-up"
-                            style={{ animationDelay: `${i * 0.1}s` }}
-                        >
-                            <div
-                                className={`w-12 h-12 rounded-xl ${feat.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}
-                            >
-                                <feat.icon className={feat.color} size={24} />
-                            </div>
-                            <h3 className="text-white font-semibold text-lg mb-2">
-                                {feat.title}
-                            </h3>
-                            <p className="text-gray-500 text-sm leading-relaxed">
-                                {feat.desc}
+                {/* Scroll indicator */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+                    <ChevronRight size={24} className="rotate-90 text-gray-500" />
+                </div>
+            </section>
+
+            {/* ═══════════ SECTION 2 — STATS BAR ═══════════ */}
+            <section className="bg-[#111111] border-y border-dark-300 py-12 px-4">
+                <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+                    {stats.map((s) => (
+                        <div key={s.label} className="text-center">
+                            <p className="text-3xl sm:text-4xl font-bold text-[#1A73E8] mb-1">
+                                {s.value}
+                            </p>
+                            <p className="text-gray-400 text-sm font-medium">
+                                {s.label}
                             </p>
                         </div>
                     ))}
                 </div>
             </section>
 
-            {/* CTA Banner */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/20 to-blue-600/10 border border-primary/20 p-8 md:p-12">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div>
-                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                                Facing a civic issue?
-                            </h3>
-                            <p className="text-gray-400">
-                                File your complaint now and get a tracking ID within seconds.
-                            </p>
-                        </div>
-                        <Link
-                            to="/file-complaint"
-                            className="btn-primary flex items-center gap-2 text-base px-8 py-3 flex-shrink-0"
-                        >
-                            Get Started
-                            <ArrowRight size={16} />
-                        </Link>
+            {/* ═══════════ SECTION 3 — HOW IT WORKS ═══════════ */}
+            <section className="py-20 px-4 bg-[#0A0A0A]">
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
+                        How It Works
+                    </h2>
+                    <p className="text-gray-400 text-center mb-14 max-w-xl mx-auto">
+                        Four simple steps from complaint to resolution
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {steps.map((step, idx) => (
+                            <div key={step.num} className="relative group">
+                                {/* Arrow connector (desktop only) */}
+                                {idx < steps.length - 1 && (
+                                    <div className="hidden lg:block absolute top-10 -right-4 w-8 text-dark-300 z-10">
+                                        <ArrowRight
+                                            size={20}
+                                            className="text-gold/50"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6 text-center hover:border-[#1A73E8]/40 transition-all duration-300 h-full">
+                                    {/* Step number badge */}
+                                    <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[#1A73E8]/10 text-[#1A73E8] text-sm font-bold mb-4">
+                                        {step.num}
+                                    </div>
+
+                                    {/* Icon */}
+                                    <div className="text-4xl mb-3">
+                                        {step.icon}
+                                    </div>
+
+                                    {/* Title & description */}
+                                    <h3 className="text-white font-semibold text-lg mb-2">
+                                        {step.title}
+                                    </h3>
+                                    <p className="text-gray-400 text-sm leading-relaxed">
+                                        {step.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
+                </div>
+            </section>
+
+            {/* ═══════════ SECTION 4 — COMPLAINT CATEGORIES ═══════════ */}
+            <section className="py-20 px-4 bg-[#111111]">
+                <div className="max-w-6xl mx-auto">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
+                        What Can You Report?
+                    </h2>
+                    <p className="text-gray-400 text-center mb-14 max-w-xl mx-auto">
+                        Select a category to file your complaint instantly
+                    </p>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+                        {categories.map((cat) => (
+                            <Link
+                                key={cat.label}
+                                to="/file-complaint"
+                                className="group bg-dark-100 border border-dark-300 rounded-2xl p-6 text-center
+                                    hover:-translate-y-1 hover:border-[#1A73E8]/50 hover:shadow-lg hover:shadow-[#1A73E8]/10
+                                    transition-all duration-300"
+                            >
+                                <div className="text-4xl mb-3">
+                                    {cat.icon}
+                                </div>
+                                <p className="text-white font-medium text-sm group-hover:text-[#1A73E8] transition-colors duration-200">
+                                    {cat.label}
+                                </p>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════════ SECTION 5 — CTA BANNER ═══════════ */}
+            <section className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1A73E8] to-[#0d47a1]" />
+                {/* Decorative circles */}
+                <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
+                <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/5 rounded-full blur-2xl" />
+
+                <div className="relative z-10 max-w-4xl mx-auto text-center py-20 px-4">
+                    <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+                        Ready to Report an Issue?
+                    </h2>
+                    <p className="text-white/80 text-lg mb-10 max-w-xl mx-auto">
+                        Join thousands of Delhi citizens making their city
+                        better
+                    </p>
+                    <Link
+                        to="/file-complaint"
+                        className="inline-flex items-center gap-2 bg-white text-[#1A73E8] font-bold px-10 py-4 rounded-xl
+                            hover:bg-gray-100 transition-all duration-200 shadow-xl shadow-black/20 text-lg"
+                    >
+                        File Your Complaint Now
+                        <ArrowRight size={20} />
+                    </Link>
                 </div>
             </section>
 

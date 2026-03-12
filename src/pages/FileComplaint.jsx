@@ -1,316 +1,594 @@
 import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
+import { WARDS, CATEGORIES } from "../utils/constants";
 import { generateTrackingId } from "../utils/generateId";
-import { CATEGORIES, WARDS, PRIORITIES } from "../utils/constants";
+import {
+    CheckCircle,
+    Copy,
+    Loader2,
+    Phone,
+    Clock,
+    ShieldCheck,
+    ArrowRight,
+    ChevronRight,
+    Zap,
+    Eye,
+    FileText,
+} from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import toast from "react-hot-toast";
-import { Send, CheckCircle, Copy, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+
+/* ── Initial form state ── */
+const INITIAL = {
+    name: "",
+    phone: "",
+    ward: "",
+    category: "",
+    priority: "Standard",
+    description: "",
+    location: "",
+};
 
 function FileComplaint() {
-    const [formData, setFormData] = useState({
-        name: "",
-        phone: "",
-        ward: "",
-        category: "",
-        priority: "Standard",
-        description: "",
-    });
-    const [loading, setLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-    const [trackingId, setTrackingId] = useState("");
+    const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const [form, setForm] = useState(INITIAL);
+    const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
+    const [success, setSuccess] = useState(null); // null | { trackingId, priority }
+    const [copied, setCopied] = useState(false);
+
+    /* ── Helpers ── */
+    const set = (key, val) => {
+        setForm((prev) => ({ ...prev, [key]: val }));
+        if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
     };
 
+    /* ── Validation ── */
+    const validate = () => {
+        const e = {};
+        if (!form.name.trim()) e.name = "Full name is required";
+        if (!form.phone.trim()) e.phone = "Phone number is required";
+        else if (!/^\d{10}$/.test(form.phone.trim()))
+            e.phone = "Enter a valid 10-digit mobile number";
+        if (!form.ward) e.ward = "Please select a ward";
+        if (!form.category) e.category = "Please select a category";
+        if (!form.description.trim())
+            e.description = "Description is required";
+        else if (form.description.trim().length < 20)
+            e.description = "Minimum 20 characters required";
+        setErrors(e);
+        return Object.keys(e).length === 0;
+    };
+
+    /* ── Submit ── */
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        if (!validate()) return;
 
+        setSubmitting(true);
         try {
-            const newTrackingId = generateTrackingId();
+            const trackingId = generateTrackingId();
             await addDoc(collection(db, "complaints"), {
-                ...formData,
-                trackingId: newTrackingId,
+                trackingId,
+                name: form.name.trim(),
+                phone: form.phone.trim(),
+                ward: form.ward,
+                category: form.category,
+                description: form.description.trim(),
+                location: form.location.trim(),
+                priority: form.priority,
                 status: "Pending",
                 createdAt: serverTimestamp(),
                 resolvedAt: null,
             });
-
-            setTrackingId(newTrackingId);
-            setSubmitted(true);
-            toast.success("Complaint filed successfully!");
-        } catch (error) {
-            console.error("Error filing complaint:", error);
-            toast.error("Failed to file complaint. Please try again.");
+            setSuccess({ trackingId, priority: form.priority });
+        } catch (err) {
+            console.error("Firestore error:", err);
+            setErrors({ form: "Something went wrong. Please try again." });
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
-    const copyTrackingId = () => {
-        navigator.clipboard.writeText(trackingId);
-        toast.success("Tracking ID copied!");
+    /* ── Copy helper ── */
+    const copyId = () => {
+        if (!success) return;
+        navigator.clipboard.writeText(success.trackingId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
     };
 
-    // Success State
-    if (submitted) {
-        return (
-            <div className="min-h-screen bg-dark flex flex-col">
-                <Navbar />
-                <div className="flex-1 flex items-center justify-center px-4 py-12">
-                    <div className="card max-w-md w-full text-center animate-fade-in-up">
-                        <div className="w-16 h-16 bg-green-500/15 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle className="text-green-400" size={32} />
-                        </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">
-                            Complaint Filed!
-                        </h2>
-                        <p className="text-gray-400 text-sm mb-6">
-                            Your complaint has been registered successfully. Use the tracking
-                            ID below to check status.
-                        </p>
+    /* ── File another ── */
+    const fileAnother = () => {
+        setForm(INITIAL);
+        setErrors({});
+        setSuccess(null);
+    };
 
-                        <div className="bg-dark-200 border border-dark-300 rounded-lg p-4 mb-6">
-                            <p className="text-xs text-gray-500 mb-1">Your Tracking ID</p>
-                            <div className="flex items-center justify-center gap-3">
-                                <span className="text-2xl font-bold font-mono text-primary">
-                                    {trackingId}
-                                </span>
-                                <button
-                                    onClick={copyTrackingId}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-dark-300 transition-colors"
-                                    title="Copy ID"
-                                >
-                                    <Copy size={18} />
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-3">
-                            <Link
-                                to="/track"
-                                className="btn-primary flex-1 flex items-center justify-center gap-2"
-                            >
-                                Track Complaint
-                            </Link>
-                            <button
-                                onClick={() => {
-                                    setSubmitted(false);
-                                    setFormData({
-                                        name: "",
-                                        phone: "",
-                                        ward: "",
-                                        category: "",
-                                        priority: "Standard",
-                                        description: "",
-                                    });
-                                }}
-                                className="flex-1 py-2.5 px-6 rounded-lg font-semibold text-white border border-dark-300 hover:bg-dark-200 transition-all"
-                            >
-                                File Another
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <Footer />
-            </div>
-        );
-    }
-
+    /* ═══════════════════════ RENDER ═══════════════════════ */
     return (
-        <div className="min-h-screen bg-dark flex flex-col">
+        <div className="min-h-screen bg-[#0A0A0A] text-white">
             <Navbar />
-            <div className="flex-1 max-w-2xl mx-auto px-4 py-12 w-full">
-                {/* Header */}
-                <div className="mb-8 animate-fade-in-up">
-                    <Link
-                        to="/"
-                        className="inline-flex items-center gap-1 text-gray-500 hover:text-white text-sm mb-4 transition-colors"
-                    >
-                        <ArrowLeft size={14} />
-                        Back to Home
-                    </Link>
-                    <h1 className="text-3xl font-bold text-white">File a Complaint</h1>
-                    <p className="text-gray-500 mt-1">
-                        Report a civic issue to MCD. You'll receive a tracking ID
-                        immediately.
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                {/* ── Page Header ── */}
+                <div className="mb-10">
+                    {/* Breadcrumb */}
+                    <nav className="flex items-center text-sm text-gray-400 mb-3 gap-1">
+                        <Link
+                            to="/"
+                            className="hover:text-white transition-colors"
+                        >
+                            Home
+                        </Link>
+                        <ChevronRight size={14} />
+                        <span className="text-gray-200">File Complaint</span>
+                    </nav>
+
+                    <h1 className="text-3xl sm:text-4xl font-bold mb-2">
+                        📝 File a Complaint
+                    </h1>
+                    <p className="text-gray-400 max-w-2xl">
+                        Your complaint will be assigned a unique tracking ID and
+                        forwarded to the concerned ward officer
                     </p>
                 </div>
 
-                {/* Form */}
-                <form
-                    onSubmit={handleSubmit}
-                    className="card space-y-5 animate-fade-in-up"
-                    style={{ animationDelay: "0.1s" }}
-                >
-                    {/* Name & Phone */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Full Name <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. Rahul Sharma"
-                                className="input-dark"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Phone Number <span className="text-red-400">*</span>
-                            </label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                required
-                                placeholder="e.g. 9876543210"
-                                className="input-dark"
-                            />
-                        </div>
-                    </div>
+                {/* ── Two-Column Layout ── */}
+                <div className="flex flex-col lg:flex-row gap-8">
+                    {/* ───────── LEFT: Form / Success ───────── */}
+                    <div className="lg:w-[60%]">
+                        {success ? (
+                            /* ── SUCCESS SCREEN ── */
+                            <div className="bg-dark-100 border border-dark-300 rounded-2xl p-8 sm:p-10 text-center">
+                                {/* Animated checkmark */}
+                                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 mb-6 animate-bounce">
+                                    <CheckCircle
+                                        size={48}
+                                        className="text-green-400"
+                                    />
+                                </div>
 
-                    {/* Ward & Category */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Ward <span className="text-red-400">*</span>
-                            </label>
-                            <select
-                                name="ward"
-                                value={formData.ward}
-                                onChange={handleChange}
-                                required
-                                className="select-dark"
-                            >
-                                <option value="">Select Ward</option>
-                                {WARDS.map((w) => (
-                                    <option key={w} value={w}>
-                                        {w}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                Category <span className="text-red-400">*</span>
-                            </label>
-                            <select
-                                name="category"
-                                value={formData.category}
-                                onChange={handleChange}
-                                required
-                                className="select-dark"
-                            >
-                                <option value="">Select Category</option>
-                                {CATEGORIES.map((c) => (
-                                    <option key={c} value={c}>
-                                        {c}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
+                                <h2 className="text-2xl sm:text-3xl font-bold mb-2">
+                                    Complaint Filed Successfully! 🎉
+                                </h2>
+                                <p className="text-gray-400 mb-8">
+                                    Save this ID — you&apos;ll need it to track
+                                    your complaint
+                                </p>
 
-                    {/* Priority */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                            Priority
-                        </label>
-                        <div className="flex gap-4">
-                            {PRIORITIES.map((p) => (
-                                <label
-                                    key={p}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border cursor-pointer transition-all duration-200 ${formData.priority === p
-                                            ? p === "Urgent"
-                                                ? "border-red-500/50 bg-red-500/10 text-red-400"
-                                                : "border-primary/50 bg-primary/10 text-primary"
-                                            : "border-dark-300 bg-dark-200 text-gray-400 hover:border-gray-500"
-                                        }`}
+                                {/* Tracking ID box */}
+                                <div className="bg-[#0A0A0A] border-2 border-gold rounded-xl p-5 inline-flex items-center gap-4 mb-6">
+                                    <span className="text-gold text-2xl sm:text-3xl font-mono font-bold tracking-wider">
+                                        {success.trackingId}
+                                    </span>
+                                    <button
+                                        onClick={copyId}
+                                        className="p-2 rounded-lg bg-dark-200 hover:bg-dark-300 transition-colors"
+                                        title="Copy tracking ID"
+                                    >
+                                        <Copy
+                                            size={18}
+                                            className={
+                                                copied
+                                                    ? "text-green-400"
+                                                    : "text-gray-400"
+                                            }
+                                        />
+                                    </button>
+                                </div>
+                                {copied && (
+                                    <p className="text-green-400 text-sm mb-4">
+                                        Copied to clipboard!
+                                    </p>
+                                )}
+
+                                {/* SLA info */}
+                                <div className="flex items-center justify-center gap-2 text-gray-300 mb-8">
+                                    <Clock size={16} className="text-gold" />
+                                    <span className="text-sm">
+                                        Expected resolution:{" "}
+                                        <strong className="text-white">
+                                            {success.priority === "Urgent"
+                                                ? "24 hours"
+                                                : "72 hours"}
+                                        </strong>{" "}
+                                        based on{" "}
+                                        {success.priority.toLowerCase()}{" "}
+                                        priority
+                                    </span>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                                    <Link
+                                        to={`/track?id=${success.trackingId}`}
+                                        className="inline-flex items-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto justify-center"
+                                    >
+                                        Track This Complaint
+                                        <ArrowRight size={18} />
+                                    </Link>
+                                    <button
+                                        onClick={fileAnother}
+                                        className="inline-flex items-center gap-2 border border-dark-300 hover:border-white/30 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 w-full sm:w-auto justify-center"
+                                    >
+                                        File Another
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            /* ── COMPLAINT FORM ── */
+                            <form
+                                onSubmit={handleSubmit}
+                                noValidate
+                                className="bg-dark-100 border border-dark-300 rounded-2xl p-6 sm:p-8 space-y-6"
+                            >
+                                {errors.form && (
+                                    <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg p-3">
+                                        {errors.form}
+                                    </p>
+                                )}
+
+                                {/* 1. Full Name */}
+                                <Field
+                                    label="Full Name"
+                                    required
+                                    error={errors.name}
                                 >
                                     <input
-                                        type="radio"
-                                        name="priority"
-                                        value={p}
-                                        checked={formData.priority === p}
-                                        onChange={handleChange}
-                                        className="sr-only"
+                                        type="text"
+                                        value={form.name}
+                                        onChange={(e) =>
+                                            set("name", e.target.value)
+                                        }
+                                        placeholder="Enter your full name"
+                                        className={inputClass(errors.name)}
                                     />
-                                    <span className="text-sm font-medium">{p}</span>
-                                    <span className="text-xs text-gray-500">
-                                        {p === "Urgent" ? "(24hr SLA)" : "(72hr SLA)"}
-                                    </span>
-                                </label>
-                            ))}
+                                </Field>
+
+                                {/* 2. Phone Number */}
+                                <Field
+                                    label="Phone Number"
+                                    required
+                                    error={errors.phone}
+                                >
+                                    <input
+                                        type="tel"
+                                        value={form.phone}
+                                        onChange={(e) =>
+                                            set(
+                                                "phone",
+                                                e.target.value.replace(
+                                                    /\D/g,
+                                                    ""
+                                                )
+                                            )
+                                        }
+                                        maxLength={10}
+                                        placeholder="10-digit mobile number"
+                                        className={inputClass(errors.phone)}
+                                    />
+                                </Field>
+
+                                {/* 3. Select Ward */}
+                                <Field
+                                    label="Select Ward"
+                                    required
+                                    error={errors.ward}
+                                >
+                                    <select
+                                        value={form.ward}
+                                        onChange={(e) =>
+                                            set("ward", e.target.value)
+                                        }
+                                        className={inputClass(errors.ward)}
+                                    >
+                                        <option value="">
+                                            Select your ward
+                                        </option>
+                                        {WARDS.map((w) => (
+                                            <option key={w} value={w}>
+                                                {w}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
+
+                                {/* 4. Complaint Category */}
+                                <Field
+                                    label="Complaint Category"
+                                    required
+                                    error={errors.category}
+                                >
+                                    <select
+                                        value={form.category}
+                                        onChange={(e) =>
+                                            set("category", e.target.value)
+                                        }
+                                        className={inputClass(errors.category)}
+                                    >
+                                        <option value="">
+                                            Select category
+                                        </option>
+                                        {CATEGORIES.map((c) => (
+                                            <option key={c} value={c}>
+                                                {c}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
+
+                                {/* 5. Priority */}
+                                <Field label="Priority" required>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                set("priority", "Urgent")
+                                            }
+                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                                                form.priority === "Urgent"
+                                                    ? "border-red-500 bg-red-500/10"
+                                                    : "border-dark-300 hover:border-dark-200 bg-dark-200"
+                                            }`}
+                                        >
+                                            <p className="font-semibold mb-1">
+                                                🚨 Urgent
+                                            </p>
+                                            <p className="text-gray-400 text-xs">
+                                                Resolution within 24 hours
+                                            </p>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                set("priority", "Standard")
+                                            }
+                                            className={`p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                                                form.priority === "Standard"
+                                                    ? "border-gray-400 bg-gray-400/10"
+                                                    : "border-dark-300 hover:border-dark-200 bg-dark-200"
+                                            }`}
+                                        >
+                                            <p className="font-semibold mb-1">
+                                                📋 Standard
+                                            </p>
+                                            <p className="text-gray-400 text-xs">
+                                                Resolution within 72 hours
+                                            </p>
+                                        </button>
+                                    </div>
+                                </Field>
+
+                                {/* 6. Description */}
+                                <Field
+                                    label="Complaint Description"
+                                    required
+                                    error={errors.description}
+                                >
+                                    <textarea
+                                        value={form.description}
+                                        onChange={(e) =>
+                                            set("description", e.target.value)
+                                        }
+                                        maxLength={500}
+                                        rows={4}
+                                        placeholder="Describe the issue in detail (minimum 20 characters)"
+                                        className={`${inputClass(
+                                            errors.description
+                                        )} resize-none`}
+                                    />
+                                    <p
+                                        className={`text-xs mt-1 ${
+                                            form.description.length >= 20
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                        }`}
+                                    >
+                                        {form.description.length} / 500
+                                        characters
+                                    </p>
+                                </Field>
+
+                                {/* 7. Location */}
+                                <Field label="Location Details">
+                                    <input
+                                        type="text"
+                                        value={form.location}
+                                        onChange={(e) =>
+                                            set("location", e.target.value)
+                                        }
+                                        placeholder="Street name, landmark, sector number"
+                                        className={inputClass()}
+                                    />
+                                </Field>
+
+                                {/* Submit */}
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="w-full flex items-center justify-center gap-2 bg-[#1A73E8] hover:bg-[#1558b0] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-all duration-200 shadow-lg shadow-blue-500/20"
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <Loader2
+                                                size={20}
+                                                className="animate-spin"
+                                            />
+                                            Submitting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Submit Complaint
+                                            <ArrowRight size={18} />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        )}
+                    </div>
+
+                    {/* ───────── RIGHT: Info Panel ───────── */}
+                    <div className="lg:w-[40%] space-y-6">
+                        {/* Why File Online? */}
+                        <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold mb-4 text-gold">
+                                Why File Online?
+                            </h3>
+                            <div className="space-y-4">
+                                {[
+                                    {
+                                        icon: (
+                                            <Zap
+                                                size={18}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        ),
+                                        title: "Instant Processing",
+                                        desc: "AI classifies and routes your complaint in seconds",
+                                    },
+                                    {
+                                        icon: (
+                                            <Eye
+                                                size={18}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        ),
+                                        title: "Full Transparency",
+                                        desc: "Track every status change with real-time updates",
+                                    },
+                                    {
+                                        icon: (
+                                            <ShieldCheck
+                                                size={18}
+                                                className="text-[#1A73E8]"
+                                            />
+                                        ),
+                                        title: "Accountability",
+                                        desc: "Officers are held responsible with SLA deadlines",
+                                    },
+                                ].map((b) => (
+                                    <div
+                                        key={b.title}
+                                        className="flex gap-3 items-start"
+                                    >
+                                        <div className="mt-0.5 p-2 rounded-lg bg-[#1A73E8]/10 shrink-0">
+                                            {b.icon}
+                                        </div>
+                                        <div>
+                                            <p className="font-semibold text-sm">
+                                                {b.title}
+                                            </p>
+                                            <p className="text-gray-400 text-xs">
+                                                {b.desc}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* What Happens Next? */}
+                        <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold mb-4 text-gold">
+                                What Happens Next?
+                            </h3>
+                            <div className="space-y-4">
+                                {[
+                                    {
+                                        step: "1",
+                                        text: "You receive a unique tracking ID",
+                                    },
+                                    {
+                                        step: "2",
+                                        text: "AI assigns complaint to the right ward officer",
+                                    },
+                                    {
+                                        step: "3",
+                                        text: "Officer acknowledges & begins resolution",
+                                    },
+                                    {
+                                        step: "4",
+                                        text: "You get notified when issue is resolved",
+                                    },
+                                ].map((s, idx) => (
+                                    <div
+                                        key={s.step}
+                                        className="flex items-start gap-3"
+                                    >
+                                        <div className="relative flex flex-col items-center">
+                                            <div className="w-7 h-7 rounded-full bg-[#1A73E8]/10 text-[#1A73E8] flex items-center justify-center text-xs font-bold shrink-0">
+                                                {s.step}
+                                            </div>
+                                            {idx < 3 && (
+                                                <div className="w-px h-6 bg-dark-300 mt-1" />
+                                            )}
+                                        </div>
+                                        <p className="text-gray-300 text-sm mt-1">
+                                            {s.text}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Need Help? */}
+                        <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6">
+                            <h3 className="text-lg font-bold mb-3 text-gold">
+                                Need Help?
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green-500/10">
+                                    <Phone
+                                        size={18}
+                                        className="text-green-400"
+                                    />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-gray-400">
+                                        MCD Helpline
+                                    </p>
+                                    <p className="text-xl font-bold text-white tracking-wider">
+                                        155305
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                            Description <span className="text-red-400">*</span>
-                        </label>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            required
-                            rows={4}
-                            placeholder="Describe the issue in detail (e.g. location, severity, how long it's been there)..."
-                            className="input-dark resize-none"
-                        />
-                    </div>
-
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary w-full flex items-center justify-center gap-2 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <>
-                                <svg
-                                    className="animate-spin h-5 w-5"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                        fill="none"
-                                    />
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                                    />
-                                </svg>
-                                Submitting...
-                            </>
-                        ) : (
-                            <>
-                                <Send size={18} />
-                                Submit Complaint
-                            </>
-                        )}
-                    </button>
-                </form>
+                </div>
             </div>
+
             <Footer />
         </div>
     );
+}
+
+/* ═══════════ Reusable sub-components ═══════════ */
+
+/** Labelled form field wrapper */
+function Field({ label, required, error, children }) {
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-200 mb-1.5">
+                {label}
+                {required && <span className="text-red-400 ml-0.5">*</span>}
+            </label>
+            {children}
+            {error && (
+                <p className="text-red-400 text-xs mt-1.5">{error}</p>
+            )}
+        </div>
+    );
+}
+
+/** Shared Tailwind classes for inputs */
+function inputClass(error) {
+    return `w-full bg-dark-200 border ${
+        error ? "border-red-500" : "border-dark-300"
+    } rounded-xl px-4 py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A73E8]/50 focus:border-[#1A73E8] transition-all duration-200`;
 }
 
 export default FileComplaint;
