@@ -29,6 +29,7 @@ import {
     Construction,
     ArrowUpCircle,
     Phone,
+    Camera,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -743,21 +744,66 @@ function TrackComplaint() {
                             </div>
                         </div>
 
-                        {/* ─ Resolution Proof Photo ─ */}
-                        {c.status === "Resolved" && c.resolutionPhotoUrl && (
+                        {/* ─ Photo Evidence (Before / After) ─ */}
+                        {(c.complaintPhotoUrl || (c.status === "Resolved" && c.resolutionPhotoUrl)) && (
                             <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6 sm:p-8">
-                                <h3 className="flex items-center gap-2 text-lg font-bold mb-4 text-green-400">
-                                    <CheckCircle size={20} />
-                                    Resolution Proof
-                                </h3>
-                                <img
-                                    src={c.resolutionPhotoUrl}
-                                    alt="Resolution proof"
-                                    className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300 mb-3"
-                                />
-                                <p className="text-gray-400 text-sm">
-                                    Verified and resolved by Ward Officer
-                                </p>
+                                {/* Both photos — side by side */}
+                                {c.complaintPhotoUrl && c.status === "Resolved" && c.resolutionPhotoUrl ? (
+                                    <>
+                                        <h3 className="flex items-center gap-2 text-lg font-bold mb-5 text-gold">
+                                            <Camera size={20} />
+                                            Photo Evidence
+                                        </h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">Before</p>
+                                                <img
+                                                    src={c.complaintPhotoUrl}
+                                                    alt="Issue photo"
+                                                    className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300"
+                                                />
+                                                <p className="text-gray-500 text-xs mt-2">Photo submitted by citizen</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">After</p>
+                                                <img
+                                                    src={c.resolutionPhotoUrl}
+                                                    alt="Resolution proof"
+                                                    className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300"
+                                                />
+                                                <p className="text-gray-500 text-xs mt-2">Verified and resolved by Ward Officer</p>
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : c.complaintPhotoUrl ? (
+                                    /* Only complaint photo */
+                                    <>
+                                        <h3 className="flex items-center gap-2 text-lg font-bold mb-4 text-[#1A73E8]">
+                                            <Camera size={20} />
+                                            Issue Photo
+                                        </h3>
+                                        <img
+                                            src={c.complaintPhotoUrl}
+                                            alt="Issue photo"
+                                            className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300 mb-3"
+                                        />
+                                        <p className="text-gray-400 text-sm">Photo submitted by citizen</p>
+                                    </>
+                                ) : (
+                                    /* Only resolution photo */
+                                    <>
+                                        <h3 className="flex items-center gap-2 text-lg font-bold mb-4 text-green-400">
+                                            <CheckCircle size={20} />
+                                            Resolution Proof
+                                        </h3>
+                                        <img
+                                            src={c.resolutionPhotoUrl}
+                                            alt="Resolution proof"
+                                            className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300 mb-3"
+                                        />
+                                        <p className="text-gray-400 text-sm">Verified and resolved by Ward Officer</p>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

@@ -21,6 +21,8 @@ import {
     ClipboardList,
     AlertTriangle,
     PartyPopper,
+    ImagePlus,
+    X,
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -48,6 +50,10 @@ function FileComplaint() {
     /* ── AI Classification State ── */
     const [aiClassifying, setAiClassifying] = useState(false);
     const [aiSuggestion, setAiSuggestion] = useState(null);
+
+    /* ── Photo upload state ── */
+    const [complaintPhoto, setComplaintPhoto] = useState(null);
+    const [complaintPhotoPreview, setComplaintPhotoPreview] = useState(null);
 
     /* ── Helpers ── */
     const set = (key, val) => {
@@ -114,6 +120,24 @@ function FileComplaint() {
         return Object.keys(e).length === 0;
     };
 
+    /* ── Photo file handler ── */
+    const handlePhotoChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            setErrors((prev) => ({ ...prev, photo: "Max file size is 10MB" }));
+            return;
+        }
+        setErrors((prev) => ({ ...prev, photo: "" }));
+        setComplaintPhoto(file);
+        setComplaintPhotoPreview(URL.createObjectURL(file));
+    };
+
+    const removePhoto = () => {
+        setComplaintPhoto(null);
+        setComplaintPhotoPreview(null);
+    };
+
     /* ── Submit ── */
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -147,6 +171,20 @@ function FileComplaint() {
                 }
             }
 
+            // Upload photo to Cloudinary if selected
+            let complaintPhotoUrl = null;
+            if (complaintPhoto) {
+                const fd = new FormData();
+                fd.append("file", complaintPhoto);
+                fd.append("upload_preset", "Jansamadhan");
+                const res = await fetch(
+                    "https://api.cloudinary.com/v1_1/djgxnupog/image/upload",
+                    { method: "POST", body: fd }
+                );
+                const data = await res.json();
+                complaintPhotoUrl = data.secure_url;
+            }
+
             const trackingId = generateTrackingId();
             await addDoc(collection(db, "complaints"), {
                 trackingId,
@@ -161,6 +199,7 @@ function FileComplaint() {
                 aiClassified: wasAiClassified,
                 createdAt: serverTimestamp(),
                 resolvedAt: null,
+                complaintPhotoUrl,
             });
             setSuccess({
                 trackingId,
@@ -189,6 +228,8 @@ function FileComplaint() {
         setSuccess(null);
         setAiSuggestion(null);
         setAiClassifying(false);
+        setComplaintPhoto(null);
+        setComplaintPhotoPreview(null);
     };
 
     /* ═══════════════════════ RENDER ═══════════════════════ */
@@ -539,6 +580,42 @@ function FileComplaint() {
                                         placeholder="Street name, landmark, sector number"
                                         className={inputClass()}
                                     />
+                                </Field>
+
+                                {/* 8. Photo Upload (Optional) */}
+                                <Field label="Upload Photo (Optional)">
+                                    <p className="text-gray-500 text-xs mb-3">Attach a photo of the issue for better context</p>
+                                    {complaintPhotoPreview ? (
+                                        <div className="relative">
+                                            <img
+                                                src={complaintPhotoPreview}
+                                                alt="Preview"
+                                                className="w-full max-h-[200px] object-cover rounded-xl border border-dark-300"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={removePhoto}
+                                                className="absolute top-2 right-2 p-1 rounded-full bg-red-500/80 hover:bg-red-500 text-white transition-colors"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-dark-300 rounded-xl cursor-pointer hover:border-[#1A73E8]/50 hover:bg-dark-200/30 transition-all">
+                                            <ImagePlus size={32} className="text-gray-500" />
+                                            <span className="text-gray-400 text-sm">Click to upload image</span>
+                                            <span className="text-gray-600 text-xs">JPG, PNG — max 10MB</span>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handlePhotoChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+                                    )}
+                                    {errors.photo && (
+                                        <p className="text-red-400 text-xs mt-1">{errors.photo}</p>
+                                    )}
                                 </Field>
 
                                 {/* Submit */}
