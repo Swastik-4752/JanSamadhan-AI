@@ -200,6 +200,36 @@ function AdminDashboard() {
         navigate("/admin", { replace: true });
     };
 
+    // Helper to call backend API
+    const updateComplaintStatus = async (trackingId, newStatus) => {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://jansamadhan-ai-backend-1.onrender.com";
+        try {
+            const response = await fetch(`${backendUrl}/update-status`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    trackingId: trackingId,
+                    newStatus: newStatus
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log("Status updated + notification sent");
+                return { success: true };
+            } else {
+                console.error("Failed:", data.message || data.error);
+                return { success: false, message: data.message || data.error };
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            return { success: false, message: "Server error while updating status" };
+        }
+    };
+
     // Update complaint status
     const handleStatusChange = async (id, newStatus) => {
         // Intercept "Resolved" to open the modal
@@ -209,14 +239,16 @@ function AdminDashboard() {
         }
 
         setUpdatingId(id);
-        try {
-            const updateData = { status: newStatus };
-            await updateDoc(doc(db, "complaints", id), updateData);
+        const complaint = complaints.find(c => c.id === id);
+        
+        const result = await updateComplaintStatus(complaint.trackingId, newStatus);
+        
+        if (result.success) {
             toast.success(`Status updated to ${newStatus}`);
-        } catch (error) {
-            console.error("Update error:", error);
-            toast.error("Failed to update status.");
+        } else {
+            toast.error(result.message || "Failed to update status");
         }
+        
         setUpdatingId(null);
     };
 
@@ -259,14 +291,22 @@ function AdminDashboard() {
                 resolutionPhotoUrl = data.secure_url;
             }
 
-            // Update Firestore
+            // Update Firestore with photo and timestamp (backend will handle status update)
             await updateDoc(doc(db, "complaints", complaintId), {
-                status: "Resolved",
                 resolvedAt: serverTimestamp(),
                 resolutionPhotoUrl,
             });
 
-            toast.success("Complaint marked as Resolved!");
+            // Call backend API to update status and notify
+            const complaint = complaints.find(c => c.id === complaintId);
+            const result = await updateComplaintStatus(complaint.trackingId, "Resolved");
+
+            if (result.success) {
+                toast.success("Complaint marked as Resolved!");
+            } else {
+                toast.error(result.message || "Failed to mark as Resolved.");
+            }
+            
             cancelResolve();
         } catch (error) {
             console.error("Resolve error:", error);
