@@ -751,11 +751,17 @@ function TrackComplaint() {
                             const userPhoto =
                                 c.complaintPhotoUrl ||
                                 c.imageUrl ||
-                                c.image ||
-                                c.photo ||
-                                c.fileUrl;
-                            const adminPhoto = c.resolutionPhotoUrl;
-                            if (!userPhoto && !adminPhoto) return null;
+                                c.image;
+
+                            const resolutionPhoto =
+                                c.resolutionPhotoUrl ||
+                                c.resolutionImage ||
+                                c.afterImage;
+
+                            console.log("User Image:", userPhoto);
+                            console.log("Resolution Image:", resolutionPhoto);
+
+                            if (!userPhoto && !resolutionPhoto) return null;
                             return (
                                 <div className="bg-dark-100 border border-dark-300 rounded-2xl p-6 sm:p-8">
                                     <h3 className="flex items-center gap-2 text-lg font-bold mb-5 text-gold">
@@ -763,7 +769,7 @@ function TrackComplaint() {
                                         Photo Evidence
                                     </h3>
 
-                                    {userPhoto && adminPhoto ? (
+                                    {userPhoto && resolutionPhoto ? (
                                         /* ── Both photos side by side ── */
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
@@ -782,7 +788,7 @@ function TrackComplaint() {
                                                     Resolution Proof
                                                 </p>
                                                 <img
-                                                    src={adminPhoto}
+                                                    src={resolutionPhoto}
                                                     alt="Resolution proof"
                                                     className="w-full max-h-[250px] object-cover rounded-xl border border-dark-300"
                                                 />
@@ -802,20 +808,20 @@ function TrackComplaint() {
                                             />
                                             <p className="text-gray-500 text-xs">Photo submitted by citizen</p>
                                         </div>
-                                    ) : (
+                                    ) : resolutionPhoto ? (
                                         /* ── Only admin photo ── */
                                         <div>
                                             <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
                                                 Resolution Proof
                                             </p>
                                             <img
-                                                src={adminPhoto}
+                                                src={resolutionPhoto}
                                                 alt="Resolution proof"
                                                 className="w-full max-h-[300px] object-cover rounded-xl border border-dark-300 mb-2"
                                             />
                                             <p className="text-gray-500 text-xs">Verified by Ward Officer</p>
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             );
                         })()}
