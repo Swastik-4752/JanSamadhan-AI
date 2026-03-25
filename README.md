@@ -8,7 +8,7 @@
 
 ## 🔗 Live Demo
 
-**🌐 https://jansamadhan-ai.web.app**
+**🌐 https://jan-samadhan-ai.vercel.app/**
 
 **Admin Demo Credentials:**
 - Email: `admin@jansamadhan.com`
